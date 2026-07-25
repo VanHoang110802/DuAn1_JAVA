@@ -1,33 +1,32 @@
 package com.example.Entity;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public class HoaDon {
     private String maHD;
-    private LocalDate ngayLap;
+    private LocalDateTime ngayLap;
     private double tongTien;
     private String trangThai;
     private String maBan;
     private String maND;
     private String maKH;
+    private String maVoucher;
     private double tienThua;
 
     public HoaDon() {
     }
 
     // Backwards-compatible constructor (maKH will be null)
-    public HoaDon(String maHD, LocalDate ngayLap, double tongTien, String trangThai, String maBan, String maND) {
-        this.maHD = maHD;
-        this.ngayLap = ngayLap;
-        this.tongTien = tongTien;
-        this.trangThai = trangThai;
-        this.maBan = maBan;
-        this.maND = maND;
-        this.maKH = null;
+    public HoaDon(String maHD, LocalDateTime ngayLap, double tongTien, String trangThai, String maBan, String maND) {
+        this(maHD, ngayLap, tongTien, trangThai, maBan, maND, null, null);
     }
 
     // New constructor including MaKH
-    public HoaDon(String maHD, LocalDate ngayLap, double tongTien, String trangThai, String maBan, String maND, String maKH) {
+    public HoaDon(String maHD, LocalDateTime ngayLap, double tongTien, String trangThai, String maBan, String maND, String maKH) {
+        this(maHD, ngayLap, tongTien, trangThai, maBan, maND, maKH, null);
+    }
+
+    public HoaDon(String maHD, LocalDateTime ngayLap, double tongTien, String trangThai, String maBan, String maND, String maKH, String maVoucher) {
         this.maHD = maHD;
         this.ngayLap = ngayLap;
         this.tongTien = tongTien;
@@ -35,6 +34,7 @@ public class HoaDon {
         this.maBan = maBan;
         this.maND = maND;
         this.maKH = maKH;
+        this.maVoucher = maVoucher;
     }
 
     public String getMaHD() {
@@ -45,11 +45,11 @@ public class HoaDon {
         this.maHD = maHD;
     }
 
-    public LocalDate getNgayLap() {
+    public LocalDateTime getNgayLap() {
         return ngayLap;
     }
 
-    public void setNgayLap(LocalDate ngayLap) {
+    public void setNgayLap(LocalDateTime ngayLap) {
         this.ngayLap = ngayLap;
     }
 
@@ -90,4 +90,7 @@ public class HoaDon {
 
     public String getMaKH() { return maKH; }
     public void setMaKH(String maKH) { this.maKH = maKH; }
+
+    public String getMaVoucher() { return maVoucher; }
+    public void setMaVoucher(String maVoucher) { this.maVoucher = maVoucher; }
 }

@@ -75,6 +75,20 @@
             <version>2.0.0</version>
         </dependency>
 
+        <!-- Apache Jasper JSP Engine: biên dịch JSP thành servlet -->
+        <dependency>
+            <groupId>org.apache.tomcat.embed</groupId>
+            <artifactId>tomcat-embed-jasper</artifactId>
+            <version>10.1.31</version>
+        </dependency>
+
+        <!-- Jakarta JSP API: định nghĩa JSP tags và interfaces -->
+        <dependency>
+            <groupId>jakarta.servlet.jsp</groupId>
+            <artifactId>jakarta.servlet.jsp-api</artifactId>
+            <version>3.1.1</version>
+        </dependency>
+
         <!-- BCrypt: mã hóa mật khẩu an toàn trước khi lưu DB -->
         <dependency>
             <groupId>org.mindrot</groupId>
@@ -93,7 +107,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-tomcat</artifactId>
-            <scope>provided</scope>
         </dependency>
 
         <!-- Bộ công cụ test Spring Boot: JUnit, Mockito, AssertJ để viết unit test -->

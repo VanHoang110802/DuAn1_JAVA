@@ -98,13 +98,12 @@
         <!-- Phân trang -->
         <div class="pagination">
           <% int monTotalPages = request.getAttribute("monTotalPages") != null ? (Integer) request.getAttribute("monTotalPages") : 1;
-             int monCurrentPage = request.getAttribute("monCurrentPage") != null ? (Integer) request.getAttribute("monCurrentPage") : 1;
-             int monPageSize = request.getAttribute("monPageSize") != null ? (Integer) request.getAttribute("monPageSize") : 10;
-             for (int p = 1; p <= monTotalPages; p++) { %>
+            int monCurrentPage = request.getAttribute("monCurrentPage") != null ? (Integer) request.getAttribute("monCurrentPage") : 1;
+            int monPageSize = request.getAttribute("monPageSize") != null ? (Integer) request.getAttribute("monPageSize") : 10;
+            for (int p = 1; p <= monTotalPages; p++) { %>
           <a href="thucdon?action=list&page=<%= p %>&size=<%= monPageSize %>" class="<%= (p == monCurrentPage ? "active" : "") %>">Trang <%= p %></a>
           <% } %>
         </div>
-        <p>Trang <%= monCurrentPage %></p>
       </div>
     </div>
   </section>

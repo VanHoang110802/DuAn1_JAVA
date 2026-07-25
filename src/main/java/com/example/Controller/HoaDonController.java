@@ -5,9 +5,12 @@ import com.example.Dao.KhachHangDAO;
 import com.example.Dao.BanDAO;
 import com.example.Dao.ThucDonDAO;
 import com.example.Dao.ChiTietHoaDonDAO;
+import com.example.Dao.NguoiDungDAO;
+import com.example.Dao.VoucherDAO;
 import com.example.Entity.Ban;
 import com.example.Entity.HoaDon;
 import com.example.Entity.NguoiDung;
+import com.example.Entity.Voucher;
 import com.example.JDBC.DBConnect;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
@@ -19,7 +22,7 @@ import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
 import java.sql.Connection;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @WebServlet("/hoadon")
@@ -29,6 +32,8 @@ public class HoaDonController extends HttpServlet {
     private BanDAO banDao;
     private ThucDonDAO thucDonDao;
     private ChiTietHoaDonDAO ctDao;
+    private NguoiDungDAO nguoiDungDao;
+    private VoucherDAO voucherDao;
     private Connection conn;
 
     @Override
@@ -39,6 +44,8 @@ public class HoaDonController extends HttpServlet {
         banDao = new BanDAO(conn);
         thucDonDao = new ThucDonDAO(conn);
         ctDao = new ChiTietHoaDonDAO(conn);
+        voucherDao = new VoucherDAO(conn);
+        nguoiDungDao = new NguoiDungDAO(conn);
     }
 
     @Override
@@ -55,11 +62,15 @@ public class HoaDonController extends HttpServlet {
                     int pageSize = 10; // mặc định 10, có thể đổi lên 15
                     String pageParam = req.getParameter("page");
                     String sizeParam = req.getParameter("size");
+                    String sortParam = req.getParameter("sort"); // ASC hoặc DESC
                     if (pageParam != null) {
                         try { page = Integer.parseInt(pageParam); if (page < 1) page = 1; } catch (NumberFormatException ignored) {}
                     }
                     if (sizeParam != null) {
                         try { pageSize = Integer.parseInt(sizeParam); if (pageSize < 1) pageSize = 10; } catch (NumberFormatException ignored) {}
+                    }
+                    if (sortParam == null) {
+                        sortParam = "DESC"; // Mặc định sắp xếp mới nhất trước
                     }
 
                     int totalHD = hoaDonDao.countAll();
@@ -67,7 +78,11 @@ public class HoaDonController extends HttpServlet {
                     if (page > totalPages && totalPages > 0) page = totalPages;
                     int offset = (page - 1) * pageSize;
 
-                    req.setAttribute("listHD", hoaDonDao.getPage(offset, pageSize));
+                    req.setAttribute("listHD", hoaDonDao.getPage(offset, pageSize, sortParam));
+                    req.setAttribute("sort", sortParam); // Lưu sort direction cho JSP
+
+                    // Load danh sách voucher có thể sử dụng
+                    req.setAttribute("listVoucher", voucherDao.getAvailable(LocalDateTime.now()));
 
                     // pagination for Ban shown in dashboard (banPage / banSize)
                     int banPage = 1;
@@ -133,6 +148,73 @@ public class HoaDonController extends HttpServlet {
                     RequestDispatcher rdEdit = req.getRequestDispatcher("editHoaDon.jsp");
                     rdEdit.forward(req, resp);
                     break;
+
+                case "open": {
+                    // Open an invoice for editing if it's still being served
+                    String maHDOpen = req.getParameter("maHD");
+                    HoaDon hdOpen = hoaDonDao.findById(maHDOpen);
+
+                    if (hdOpen != null && "Đang phục vụ".equals(hdOpen.getTrangThai())) {
+                        // Handle menu pagination
+                        int openMonPage = 1;
+                        int openMonPageSize = 10;
+                        String openMonPageParam = req.getParameter("monPage");
+                        String openMonSizeParam = req.getParameter("monSize");
+                        if (openMonPageParam != null) {
+                            try { openMonPage = Integer.parseInt(openMonPageParam); if (openMonPage < 1) openMonPage = 1; } catch (NumberFormatException ignored) {}
+                        }
+                        if (openMonSizeParam != null) {
+                            try { openMonPageSize = Integer.parseInt(openMonSizeParam); if (openMonPageSize < 1) openMonPageSize = 10; } catch (NumberFormatException ignored) {}
+                        }
+                        int openMonTotal = thucDonDao.countAll();
+                        int openMonTotalPages = (int) Math.ceil((double) openMonTotal / openMonPageSize);
+                        if (openMonPage > openMonTotalPages && openMonTotalPages > 0) openMonPage = openMonTotalPages;
+                        int openMonOffset = (openMonPage - 1) * openMonPageSize;
+
+                        // Handle ban pagination
+                        int openBanPage = 1;
+                        int openBanPageSize = 10;
+                        String openBanPageParam = req.getParameter("banPage");
+                        String openBanSizeParam = req.getParameter("banSize");
+                        if (openBanPageParam != null) {
+                            try { openBanPage = Integer.parseInt(openBanPageParam); if (openBanPage < 1) openBanPage = 1; } catch (NumberFormatException ignored) {}
+                        }
+                        if (openBanSizeParam != null) {
+                            try { openBanPageSize = Integer.parseInt(openBanSizeParam); if (openBanPageSize < 1) openBanPageSize = 10; } catch (NumberFormatException ignored) {}
+                        }
+                        int openBanTotal = banDao.countAll();
+                        int openBanTotalPages = (int) Math.ceil((double) openBanTotal / openBanPageSize);
+                        if (openBanPage > openBanTotalPages && openBanTotalPages > 0) openBanPage = openBanTotalPages;
+                        int openBanOffset = (openBanPage - 1) * openBanPageSize;
+
+                        // Load all necessary data for editing
+                        req.setAttribute("currentHD", hdOpen);
+                        req.setAttribute("listBan", banDao.getPage(openBanOffset, openBanPageSize));
+                        req.setAttribute("listMon", thucDonDao.getPage(openMonOffset, openMonPageSize));
+                        req.setAttribute("listHD", hoaDonDao.getPage(0, 10, "DESC"));
+                        req.setAttribute("listCTHD", ctDao.findByHoaDon(maHDOpen));
+                        req.setAttribute("listVoucher", voucherDao.getAvailable(LocalDateTime.now()));
+
+                        // Set pagination info for menu
+                        req.setAttribute("monTotal", openMonTotal);
+                        req.setAttribute("monTotalPages", openMonTotalPages);
+                        req.setAttribute("monCurrentPage", openMonPage);
+                        req.setAttribute("monPageSize", openMonPageSize);
+
+                        // Set pagination info for ban
+                        req.setAttribute("banTotal", openBanTotal);
+                        req.setAttribute("banTotalPages", openBanTotalPages);
+                        req.setAttribute("banCurrentPage", openBanPage);
+                        req.setAttribute("banPageSize", openBanPageSize);
+
+                        RequestDispatcher rdOpen = req.getRequestDispatcher("index.jsp");
+                        rdOpen.forward(req, resp);
+                    } else {
+                        // If invoice is not being served or not found, redirect to list
+                        resp.sendRedirect("hoadon?action=list");
+                    }
+                    break;
+                }
             }
         } catch (Exception e) {
             throw new ServletException(e);
@@ -147,7 +229,7 @@ public class HoaDonController extends HttpServlet {
         try {
             if ("insert".equals(action)) {
                 String maHD = req.getParameter("maHD");
-                LocalDate ngayLap = LocalDate.parse(req.getParameter("ngayLap"));
+                LocalDateTime ngayLap = LocalDateTime.parse(req.getParameter("ngayLap"));
                 double tongTien = Double.parseDouble(req.getParameter("tongTien"));
                 String trangThai = req.getParameter("trangThai");
                 String maBan = req.getParameter("maBan");
@@ -176,7 +258,7 @@ public class HoaDonController extends HttpServlet {
 
                 // Tạo hóa đơn mới cho bàn này
                 String maHD = "HD" + System.currentTimeMillis();
-                HoaDon hd = new HoaDon(maHD, LocalDate.now(), 0.0, "Đang phục vụ", maBan, currentUser.getMaND());
+                HoaDon hd = new HoaDon(maHD, LocalDateTime.now(), 0.0, "Đang phục vụ", maBan, currentUser.getMaND());
                 hoaDonDao.insert(hd);
 
                 // Gắn dữ liệu vào request để JSP hiển thị lại tất cả bảng
@@ -192,113 +274,128 @@ public class HoaDonController extends HttpServlet {
                 String maHD = req.getParameter("maHD");
                 String customerName = req.getParameter("customerName");
                 String customerPhone = req.getParameter("customerPhone");
+                String maVoucher = req.getParameter("maVoucher");
+                String selectedVoucherCode = maVoucher != null ? maVoucher.trim() : "";
+                String errorMessage = null;
 
                 // Validate customer name (bắt buộc, không để trống)
                 if (customerName == null || customerName.trim().isEmpty()) {
-                    req.setAttribute("error", "Tên khách hàng không được để trống!");
-                    req.setAttribute("currentHD", hoaDonDao.findById(maHD));
-                    req.setAttribute("listBan", banDao.getAll());
-                    req.setAttribute("listMon", thucDonDao.getAll());
-                    req.setAttribute("listHD", hoaDonDao.getAll());
-                    req.setAttribute("listCTHD", ctDao.findByHoaDon(maHD));
-                    RequestDispatcher rd = req.getRequestDispatcher("index.jsp");
-                    rd.forward(req, resp);
-                    return;
+                    errorMessage = "Tên khách hàng không được để trống!";
+                } else {
+                    customerName = customerName.trim();
                 }
-                customerName = customerName.trim();
 
-                // Validate phone (optional, nhưng nếu nhập thì phải hợp lệ: 10-11 chữ số)
-                if (customerPhone != null && !customerPhone.trim().isEmpty()) {
-                    customerPhone = customerPhone.trim();
-                    if (!customerPhone.matches("^[0-9]{10,11}$")) {
-                        req.setAttribute("error", "Số điện thoại không hợp lệ (phải là 10-11 chữ số)!");
-                        req.setAttribute("currentHD", hoaDonDao.findById(maHD));
-                        req.setAttribute("listBan", banDao.getAll());
-                        req.setAttribute("listMon", thucDonDao.getAll());
-                        req.setAttribute("listHD", hoaDonDao.getAll());
-                        req.setAttribute("listCTHD", ctDao.findByHoaDon(maHD));
-                        RequestDispatcher rd = req.getRequestDispatcher("index.jsp");
-                        rd.forward(req, resp);
-                        return;
+                if (errorMessage == null) {
+                    // Validate phone (optional, nhưng nếu nhập thì phải hợp lệ: 10-11 chữ số)
+                    if (customerPhone != null && !customerPhone.trim().isEmpty()) {
+                        customerPhone = customerPhone.trim();
+                        if (!customerPhone.matches("^[0-9]{10,11}$")) {
+                            errorMessage = "Số điện thoại không hợp lệ (phải là 10-11 chữ số)!";
+                        }
                     }
                 }
 
-                // Validate tiền khách đưa
-                double tienKhachDua;
-                try {
-                    tienKhachDua = Double.parseDouble(req.getParameter("tienKhachDua"));
-                    if (tienKhachDua <= 0) {
-                        req.setAttribute("error", "Tiền khách đưa phải lớn hơn 0!");
-                        req.setAttribute("currentHD", hoaDonDao.findById(maHD));
-                        req.setAttribute("listBan", banDao.getAll());
-                        req.setAttribute("listMon", thucDonDao.getAll());
-                        req.setAttribute("listHD", hoaDonDao.getAll());
-                        req.setAttribute("listCTHD", ctDao.findByHoaDon(maHD));
-                        RequestDispatcher rd = req.getRequestDispatcher("index.jsp");
-                        rd.forward(req, resp);
-                        return;
+                double tienKhachDua = 0;
+                if (errorMessage == null) {
+                    // Validate tiền khách đưa
+                    try {
+                        tienKhachDua = Double.parseDouble(req.getParameter("tienKhachDua"));
+                        if (tienKhachDua <= 0) {
+                            errorMessage = "Tiền khách đưa phải lớn hơn 0!";
+                        }
+                    } catch (NumberFormatException e) {
+                        errorMessage = "Tiền khách đưa phải là số hợp lệ!";
                     }
-                } catch (NumberFormatException e) {
-                    req.setAttribute("error", "Tiền khách đưa phải là số hợp lệ!");
-                    req.setAttribute("currentHD", hoaDonDao.findById(maHD));
-                    req.setAttribute("listBan", banDao.getAll());
-                    req.setAttribute("listMon", thucDonDao.getAll());
-                    req.setAttribute("listHD", hoaDonDao.getAll());
-                    req.setAttribute("listCTHD", ctDao.findByHoaDon(maHD));
-                    RequestDispatcher rd = req.getRequestDispatcher("index.jsp");
-                    rd.forward(req, resp);
-                    return;
+                } else {
+                    tienKhachDua = 0;
                 }
 
                 HoaDon hd = hoaDonDao.findById(maHD);
+                double orderTotal = ctDao.tinhTongTien(maHD);
+                hd.setTongTien(orderTotal);
+                hd.setMaVoucher(null);
 
-                // Tính tổng tiền từ chi tiết
-                double tongTien = ctDao.tinhTongTien(maHD);
-                hd.setTongTien(tongTien);
+                double finalAmount = orderTotal;
+                double discountAmount = 0.0;
+                Voucher selectedVoucher = null;
+                if (errorMessage == null && !selectedVoucherCode.isEmpty()) {
+                    selectedVoucher = voucherDao.findById(selectedVoucherCode);
+                    if (selectedVoucher == null) {
+                        errorMessage = "Voucher không tồn tại!";
+                    } else if (!selectedVoucher.isConThe(LocalDateTime.now())) {
+                        errorMessage = "Voucher không còn hiệu lực!";
+                    } else if (selectedVoucher.getDonGiaTuoiNhap() > orderTotal) {
+                        errorMessage = "Đơn hàng chưa đủ giá trị tối thiểu để dùng voucher này.";
+                    } else {
+                        if ("TienMat".equals(selectedVoucher.getLoaiGiamGia())) {
+                            discountAmount = selectedVoucher.getGiaTriGiamGia();
+                        } else {
+                            discountAmount = orderTotal * selectedVoucher.getGiaTriGiamGia() / 100.0;
+                        }
+                        if (discountAmount > orderTotal) {
+                            discountAmount = orderTotal;
+                        }
+                        finalAmount = orderTotal - discountAmount;
+                        hd.setMaVoucher(selectedVoucherCode);
+                    }
+                }
 
-                if (tienKhachDua >= tongTien) {
-                    // Cập nhật trạng thái hóa đơn
+                if (errorMessage != null) {
+                    req.setAttribute("error", errorMessage);
+                    req.setAttribute("currentHD", hd);
+                    req.setAttribute("orderTotal", orderTotal);
+                    req.setAttribute("selectedVoucherCode", selectedVoucherCode);
+                    req.setAttribute("listBan", banDao.getPage(0, 10));
+                    req.setAttribute("listMon", thucDonDao.getPage(0, 10));
+                    req.setAttribute("listHD", hoaDonDao.getPage(0, 10, "DESC"));
+                    req.setAttribute("listCTHD", ctDao.findByHoaDon(maHD));
+                    req.setAttribute("listVoucher", voucherDao.getAvailable(LocalDateTime.now()));
+                    RequestDispatcher rd = req.getRequestDispatcher("index.jsp");
+                    rd.forward(req, resp);
+                    return;
+                }
+
+                if (tienKhachDua >= finalAmount) {
+                    hd.setTongTien(finalAmount);
                     hd.setTrangThai("Đã thanh toán");
-                    // If customer info provided, create/find KhachHang and associate
                     if (customerName != null && !customerName.trim().isEmpty()) {
                         String maKH = "KH" + System.currentTimeMillis();
-                        // Note: KhachHang schema has fields MaKH, TenKH, DiaChi. We store phone into DiaChi if provided.
                         com.example.Entity.KhachHang kh = new com.example.Entity.KhachHang(maKH, customerName, customerPhone);
                         khachHangDao.insert(kh);
                         hd.setMaKH(maKH);
                     }
                     hoaDonDao.update(hd);
 
-                    // Giải phóng bàn
+                    if (selectedVoucher != null) {
+                        voucherDao.decrementUsage(selectedVoucher.getMaVoucher());
+                    }
+
                     Ban b = banDao.findById(hd.getMaBan());
                     b.setTinhTrang(false);
                     banDao.update(b);
 
-                    // Tính tiền thừa
-                    double tienThua = tienKhachDua - tongTien;
-                    hd.setTienThua(tienThua);   // gán vào hóa đơn
-                    hoaDonDao.update(hd);       // lưu lại
+                    double tienThua = tienKhachDua - finalAmount;
+                    hd.setTienThua(tienThua);
+                    hoaDonDao.update(hd);
 
-                    // Đưa thông tin khách vào request để hiển thị biên lai
                     req.setAttribute("receiptCustomerName", customerName != null ? customerName : "");
                     req.setAttribute("receiptCustomerPhone", customerPhone != null ? customerPhone : "");
                     req.setAttribute("receiptMaHD", hd.getMaHD());
-                    req.setAttribute("receiptTongTien", tongTien);
+                    req.setAttribute("receiptTongTien", finalAmount);
                     req.setAttribute("receiptTienThua", tienThua);
-
-                    // giữ currentHD để JSP có thể hiển thị thông tin hóa đơn đã thanh toán
                     req.setAttribute("currentHD", hd);
                 } else {
                     req.setAttribute("error", "Khách đưa chưa đủ tiền!");
-                    // giữ currentHD để người dùng có thể sửa lại
                     req.setAttribute("currentHD", hd);
                 }
 
-                // Nạp lại dữ liệu cho index.jsp (dùng phân trang mặc định)
+                req.setAttribute("orderTotal", orderTotal);
+                req.setAttribute("selectedVoucherCode", selectedVoucherCode);
                 req.setAttribute("listBan", banDao.getPage(0, 10));
                 req.setAttribute("listMon", thucDonDao.getPage(0, 10));
-                req.setAttribute("listHD", hoaDonDao.getPage(0, 10));
-                req.setAttribute("listCTHD", null);
+                req.setAttribute("listHD", hoaDonDao.getPage(0, 10, "DESC"));
+                req.setAttribute("listCTHD", ctDao.findByHoaDon(maHD));
+                req.setAttribute("listVoucher", voucherDao.getAvailable(LocalDateTime.now()));
 
                 RequestDispatcher rd = req.getRequestDispatcher("index.jsp");
                 rd.forward(req, resp);

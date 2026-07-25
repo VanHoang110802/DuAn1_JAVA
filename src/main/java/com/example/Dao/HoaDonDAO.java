@@ -3,6 +3,7 @@ package com.example.Dao;
 import com.example.Entity.HoaDon;
 
 import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,22 +14,23 @@ public class HoaDonDAO {
         this.conn = conn;
     }
 
-    // Lấy tất cả hóa đơn
+    // Lấy tất cả hóa đơn (sắp xếp theo NgayLap DESC - mới nhất trước)
     public List<HoaDon> getAll() throws SQLException {
         List<HoaDon> list = new ArrayList<>();
-        String sql = "SELECT * FROM HoaDon";
+        String sql = "SELECT * FROM HoaDon ORDER BY NgayLap DESC";
         Statement stmt = conn.createStatement();
         ResultSet rs = stmt.executeQuery(sql);
 
         while (rs.next()) {
             HoaDon hd = new HoaDon(
                     rs.getString("MaHD"),
-                    rs.getDate("NgayLap").toLocalDate(),
+                    rs.getTimestamp("NgayLap").toLocalDateTime(),
                     rs.getDouble("TongTien"),
                     rs.getString("TrangThai"),
                     rs.getString("MaBan"),
                     rs.getString("MaND"),
-                    rs.getString("MaKH")
+                    rs.getString("MaKH"),
+                    rs.getString("MaVoucher")
             );
             list.add(hd);
         }
@@ -49,9 +51,18 @@ public class HoaDonDAO {
 
     // Lấy 1 trang hóa đơn (offset, limit) - dành cho server-side pagination
     public List<HoaDon> getPage(int offset, int limit) throws SQLException {
+        return getPage(offset, limit, "DESC"); // Mặc định sắp xếp mới nhất trước
+    }
+
+    // Lấy 1 trang hóa đơn với tuỳ chọn sắp xếp theo ngày (offset, limit, sort direction)
+    public List<HoaDon> getPage(int offset, int limit, String sortDirection) throws SQLException {
         List<HoaDon> list = new ArrayList<>();
+        // Validate sort direction
+        if (!sortDirection.equalsIgnoreCase("ASC") && !sortDirection.equalsIgnoreCase("DESC")) {
+            sortDirection = "DESC";
+        }
         // SQL Server: cần ORDER BY khi dùng OFFSET/FETCH
-        String sql = "SELECT * FROM HoaDon ORDER BY NgayLap DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+        String sql = "SELECT * FROM HoaDon ORDER BY NgayLap " + sortDirection + " OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, offset);
             ps.setInt(2, limit);
@@ -59,12 +70,13 @@ public class HoaDonDAO {
                 while (rs.next()) {
                     HoaDon hd = new HoaDon(
                             rs.getString("MaHD"),
-                            rs.getDate("NgayLap").toLocalDate(),
+                            rs.getTimestamp("NgayLap").toLocalDateTime(),
                             rs.getDouble("TongTien"),
                             rs.getString("TrangThai"),
                             rs.getString("MaBan"),
                             rs.getString("MaND"),
-                            rs.getString("MaKH")
+                            rs.getString("MaKH"),
+                            rs.getString("MaVoucher")
                     );
                     list.add(hd);
                 }
@@ -82,12 +94,13 @@ public class HoaDonDAO {
         if (rs.next()) {
             return new HoaDon(
                     rs.getString("MaHD"),
-                    rs.getDate("NgayLap").toLocalDate(),
+                    rs.getTimestamp("NgayLap").toLocalDateTime(),
                     rs.getDouble("TongTien"),
                     rs.getString("TrangThai"),
                     rs.getString("MaBan"),
                     rs.getString("MaND"),
-                    rs.getString("MaKH")
+                    rs.getString("MaKH"),
+                    rs.getString("MaVoucher")
             );
         }
         return null;
@@ -95,29 +108,31 @@ public class HoaDonDAO {
 
     // Thêm hóa đơn mới
     public void insert(HoaDon hd) throws SQLException {
-        String sql = "INSERT INTO HoaDon (MaHD, NgayLap, TongTien, TrangThai, MaBan, MaND, MaKH) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO HoaDon (MaHD, NgayLap, TongTien, TrangThai, MaBan, MaND, MaKH, MaVoucher) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         PreparedStatement ps = conn.prepareStatement(sql);
         ps.setString(1, hd.getMaHD());
-        ps.setDate(2, Date.valueOf(hd.getNgayLap()));
+        ps.setTimestamp(2, Timestamp.valueOf(hd.getNgayLap()));
         ps.setDouble(3, hd.getTongTien());
         ps.setString(4, hd.getTrangThai());
         ps.setString(5, hd.getMaBan());
         ps.setString(6, hd.getMaND());
         ps.setString(7, hd.getMaKH());
+        ps.setString(8, hd.getMaVoucher());
         ps.executeUpdate();
     }
 
     // Cập nhật hóa đơn
     public void update(HoaDon hd) throws SQLException {
-        String sql = "UPDATE HoaDon SET NgayLap=?, TongTien=?, TrangThai=?, MaBan=?, MaND=?, MaKH=? WHERE MaHD=?";
+        String sql = "UPDATE HoaDon SET NgayLap=?, TongTien=?, TrangThai=?, MaBan=?, MaND=?, MaKH=?, MaVoucher=? WHERE MaHD=?";
         PreparedStatement ps = conn.prepareStatement(sql);
-        ps.setDate(1, Date.valueOf(hd.getNgayLap()));
+        ps.setTimestamp(1, Timestamp.valueOf(hd.getNgayLap()));
         ps.setDouble(2, hd.getTongTien());
         ps.setString(3, hd.getTrangThai());
         ps.setString(4, hd.getMaBan());
         ps.setString(5, hd.getMaND());
         ps.setString(6, hd.getMaKH());
-        ps.setString(7, hd.getMaHD());
+        ps.setString(7, hd.getMaVoucher());
+        ps.setString(8, hd.getMaHD());
         ps.executeUpdate();
     }
 

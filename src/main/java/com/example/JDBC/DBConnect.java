@@ -19,8 +19,13 @@ public class DBConnect {
             conn = DriverManager.getConnection(URL, USER, PASS);
         } catch (ClassNotFoundException e) {
             System.err.println("Khong tim thay driver JDBC: " + e.getMessage());
+            throw new RuntimeException("JDBC Driver not found: " + e.getMessage(), e);
         } catch (SQLException e) {
             System.err.println("Loi ket noi DB: " + e.getMessage());
+            throw new RuntimeException("DB connection error: " + e.getMessage(), e);
+        }
+        if (conn == null) {
+            throw new RuntimeException("Unable to obtain DB connection. Check DB server and connection settings.");
         }
         return conn;
     }

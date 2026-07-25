@@ -98,15 +98,14 @@
           <% } } %>
         </table>
         <!-- Phân trang -->
-          <div class="pagination">
+        <div class="pagination">
           <% int banTotalPages = request.getAttribute("banTotalPages") != null ? (Integer) request.getAttribute("banTotalPages") : 1;
-             int banCurrentPage = request.getAttribute("banCurrentPage") != null ? (Integer) request.getAttribute("banCurrentPage") : 1;
-             int banPageSize = request.getAttribute("banPageSize") != null ? (Integer) request.getAttribute("banPageSize") : 10;
-             for (int p = 1; p <= banTotalPages; p++) { %>
+            int banCurrentPage = request.getAttribute("banCurrentPage") != null ? (Integer) request.getAttribute("banCurrentPage") : 1;
+            int banPageSize = request.getAttribute("banPageSize") != null ? (Integer) request.getAttribute("banPageSize") : 10;
+            for (int p = 1; p <= banTotalPages; p++) { %>
           <a href="<%= request.getContextPath() %>/ban?action=list&page=<%= p %>&size=<%= banPageSize %>" class="<%= (p == banCurrentPage ? "active" : "") %>">Trang <%= p %></a>
           <% } %>
         </div>
-        <p>Trang <%= banCurrentPage %></p>
       </div>
     </div>
   </section>

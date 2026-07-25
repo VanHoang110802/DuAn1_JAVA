@@ -18,7 +18,7 @@ import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
 import java.sql.Connection;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @WebServlet("/ban")
@@ -167,27 +167,41 @@ public class BanController extends HttpServlet {
 
                     // Tạo hóa đơn mới
                     String maHD = "HD" + System.currentTimeMillis();
-                    HoaDon hd = new HoaDon(maHD, LocalDate.now(),
+                    HoaDon hd = new HoaDon(maHD, LocalDateTime.now(),
                             0.0, "Đang phục vụ", maBan, currentUser.getMaND());
                     hoaDonDao.insert(hd);
 
                     // Gắn dữ liệu để hiển thị lại
                     // Bàn: trả trang đầu (10 mục) để dashboard ngắn gọn
-                    req.setAttribute("listBan", banDao.getPage(0, 10));
+                    int banPageSize = 10;
+                    int banTotal = banDao.countAll();
+                    int banTotalPages = (int) Math.ceil((double) banTotal / banPageSize);
+                    req.setAttribute("listBan", banDao.getPage(0, banPageSize));
+                    req.setAttribute("banTotal", banTotal);
+                    req.setAttribute("banTotalPages", banTotalPages);
+                    req.setAttribute("banCurrentPage", 1);
+                    req.setAttribute("banPageSize", banPageSize);
 
                     // Thực đơn: phân trang trang đầu, pageSize = 10
-                    int monPage = 1;
                     int monPageSize = 10;
                     int monTotal = thucDonDao.countAll();
                     int monTotalPages = (int) Math.ceil((double) monTotal / monPageSize);
-                    int monOffset = 0; // (monPage - 1) * monPageSize
-                    req.setAttribute("listMon", thucDonDao.getPage(monOffset, monPageSize));
+                    req.setAttribute("listMon", thucDonDao.getPage(0, monPageSize));
                     req.setAttribute("monTotal", monTotal);
                     req.setAttribute("monTotalPages", monTotalPages);
-                    req.setAttribute("monCurrentPage", monPage);
+                    req.setAttribute("monCurrentPage", 1);
                     req.setAttribute("monPageSize", monPageSize);
 
-                    req.setAttribute("listHD", hoaDonDao.getAll());
+                    // Hóa đơn: phân trang trang đầu
+                    int hdPageSize = 10;
+                    int hdTotal = hoaDonDao.countAll();
+                    int hdTotalPages = (int) Math.ceil((double) hdTotal / hdPageSize);
+                    req.setAttribute("listHD", hoaDonDao.getPage(0, hdPageSize, "DESC"));
+                    req.setAttribute("totalHD", hdTotal);
+                    req.setAttribute("totalPages", hdTotalPages);
+                    req.setAttribute("currentPage", 1);
+                    req.setAttribute("pageSize", hdPageSize);
+
                     req.setAttribute("listCTHD", ctDao.findByHoaDon(maHD));
                     req.setAttribute("currentHD", hd);
 

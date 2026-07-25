@@ -70,10 +70,10 @@
     </div>
 
     <div class="panel">
-        <div class="panel-header">
-          <h2>Danh sách nhân viên</h2>
-          <span class="status done"><%= request.getAttribute("nvTotal") != null ? request.getAttribute("nvTotal") : (listNV == null ? 0 : listNV.size()) %> nhân viên</span>
-        </div>
+      <div class="panel-header">
+        <h2>Danh sách nhân viên</h2>
+        <span class="status done"><%= request.getAttribute("nvTotal") != null ? request.getAttribute("nvTotal") : (listNV == null ? 0 : listNV.size()) %> nhân viên</span>
+      </div>
       <div class="panel-body table-wrap">
         <table>
           <tr>
@@ -99,13 +99,12 @@
         <!-- Phân trang -->
         <div class="pagination">
           <% int nvTotalPages = request.getAttribute("nvTotalPages") != null ? (Integer) request.getAttribute("nvTotalPages") : 1;
-             int nvCurrentPage = request.getAttribute("nvCurrentPage") != null ? (Integer) request.getAttribute("nvCurrentPage") : 1;
-             int nvPageSize = request.getAttribute("nvPageSize") != null ? (Integer) request.getAttribute("nvPageSize") : 10;
-             for (int p = 1; p <= nvTotalPages; p++) { %>
+            int nvCurrentPage = request.getAttribute("nvCurrentPage") != null ? (Integer) request.getAttribute("nvCurrentPage") : 1;
+            int nvPageSize = request.getAttribute("nvPageSize") != null ? (Integer) request.getAttribute("nvPageSize") : 10;
+            for (int p = 1; p <= nvTotalPages; p++) { %>
           <a href="nguoidung?action=list&page=<%= p %>&size=<%= nvPageSize %>" class="<%= (p == nvCurrentPage ? "active" : "") %>">Trang <%= p %></a>
           <% } %>
         </div>
-        <p>Trang <%= nvCurrentPage %></p>
       </div>
     </div>
   </section>

@@ -46,6 +46,11 @@
       <h3>Quản lý nhân viên</h3>
       <p class="muted">Tạo tài khoản, phân quyền và cập nhật thông tin nhân viên.</p>
     </a>
+    <a class="manager-tile" href="voucher?action=list">
+      <span>V</span>
+      <h3>Quản lý voucher</h3>
+      <p class="muted">Tạo mã giảm giá, cập nhật hạn sử dụng và quản lý lượt dùng.</p>
+    </a>
   </section>
 </main>
 </body>
