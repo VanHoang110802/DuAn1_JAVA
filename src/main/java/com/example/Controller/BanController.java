@@ -27,6 +27,7 @@ public class BanController extends HttpServlet {
     private HoaDonDAO hoaDonDao;
     private ThucDonDAO thucDonDao;
     private ChiTietHoaDonDAO ctDao;
+    private com.example.Dao.VoucherDAO voucherDao;
 
     @Override
     public void init() {
@@ -35,6 +36,7 @@ public class BanController extends HttpServlet {
         hoaDonDao = new HoaDonDAO(conn);
         thucDonDao = new ThucDonDAO(conn);
         ctDao = new ChiTietHoaDonDAO(conn);
+        voucherDao = new com.example.Dao.VoucherDAO(conn);
     }
 
     @Override
@@ -183,14 +185,27 @@ public class BanController extends HttpServlet {
                     req.setAttribute("banPageSize", banPageSize);
 
                     // Thực đơn: phân trang trang đầu, pageSize = 10
+                    int monPage = 1; // default page for menu on dashboard
                     int monPageSize = 10;
-                    int monTotal = thucDonDao.countAll();
+                    String monSearch = req.getParameter("monSearch");
+                    int monTotal;
+                    if (monSearch != null && !monSearch.trim().isEmpty()) {
+                        monTotal = thucDonDao.countSearch(monSearch.trim());
+                    } else {
+                        monTotal = thucDonDao.countAll();
+                    }
                     int monTotalPages = (int) Math.ceil((double) monTotal / monPageSize);
-                    req.setAttribute("listMon", thucDonDao.getPage(0, monPageSize));
+                    if (monPage > monTotalPages && monTotalPages > 0) monPage = monTotalPages; // ensure current page is within range
+                    if (monSearch != null && !monSearch.trim().isEmpty()) {
+                        req.setAttribute("listMon", thucDonDao.getPageSearch(0, monPageSize, monSearch.trim()));
+                    } else {
+                        req.setAttribute("listMon", thucDonDao.getPage(0, monPageSize));
+                    }
                     req.setAttribute("monTotal", monTotal);
                     req.setAttribute("monTotalPages", monTotalPages);
                     req.setAttribute("monCurrentPage", 1);
                     req.setAttribute("monPageSize", monPageSize);
+                    req.setAttribute("monSearch", monSearch != null ? monSearch : "");
 
                     // Hóa đơn: phân trang trang đầu
                     int hdPageSize = 10;
@@ -204,6 +219,8 @@ public class BanController extends HttpServlet {
 
                     req.setAttribute("listCTHD", ctDao.findByHoaDon(maHD));
                     req.setAttribute("currentHD", hd);
+                    // Load all vouchers into UI (bao gồm cả quá hạn) cho nhân viên chọn
+                    req.setAttribute("listVoucher", voucherDao.getAll());
 
                     RequestDispatcher rd = req.getRequestDispatcher("index.jsp");
                     rd.forward(req, resp);

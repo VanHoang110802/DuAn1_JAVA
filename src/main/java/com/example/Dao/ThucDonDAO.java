@@ -42,23 +42,66 @@ public class ThucDonDAO {
         return 0;
     }
 
+    // Đếm theo tìm kiếm (MaItem hoặc TenItem)
+    public int countSearch(String q) throws SQLException {
+        String sql = "SELECT COUNT(*) AS total FROM ThucDon WHERE MaItem LIKE ? OR TenItem LIKE ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            String like = "%" + q + "%";
+            ps.setString(1, like);
+            ps.setString(2, like);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt("total");
+            }
+        }
+        return 0;
+    }
+
     // Lấy 1 trang món
     public List<ThucDon> getPage(int offset, int limit) throws SQLException {
+        return getPageSearch(offset, limit, null);
+    }
+
+    // Lấy 1 trang với tìm kiếm
+    public List<ThucDon> getPageSearch(int offset, int limit, String q) throws SQLException {
         List<ThucDon> list = new ArrayList<>();
-        String sql = "SELECT * FROM ThucDon ORDER BY MaItem OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, offset);
-            ps.setInt(2, limit);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    ThucDon td = new ThucDon(
-                            rs.getString("MaItem"),
-                            rs.getString("TenItem"),
-                            rs.getDouble("Gia"),
-                            rs.getString("Loai"),
-                            rs.getString("DonViTinh")
-                    );
-                    list.add(td);
+        String sql;
+        if (q == null || q.trim().isEmpty()) {
+            sql = "SELECT * FROM ThucDon ORDER BY MaItem OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, offset);
+                ps.setInt(2, limit);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        ThucDon td = new ThucDon(
+                                rs.getString("MaItem"),
+                                rs.getString("TenItem"),
+                                rs.getDouble("Gia"),
+                                rs.getString("Loai"),
+                                rs.getString("DonViTinh")
+                        );
+                        list.add(td);
+                    }
+                }
+            }
+        } else {
+            sql = "SELECT * FROM ThucDon WHERE MaItem LIKE ? OR TenItem LIKE ? ORDER BY MaItem OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                String like = "%" + q + "%";
+                ps.setString(1, like);
+                ps.setString(2, like);
+                ps.setInt(3, offset);
+                ps.setInt(4, limit);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        ThucDon td = new ThucDon(
+                                rs.getString("MaItem"),
+                                rs.getString("TenItem"),
+                                rs.getDouble("Gia"),
+                                rs.getString("Loai"),
+                                rs.getString("DonViTinh")
+                        );
+                        list.add(td);
+                    }
                 }
             }
         }

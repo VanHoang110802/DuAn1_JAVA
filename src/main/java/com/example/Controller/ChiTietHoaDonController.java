@@ -297,7 +297,7 @@ public class ChiTietHoaDonController extends HttpServlet {
                         com.example.Entity.KhachHang kh = khDao.findById(currentHD.getMaKH());
                         if (kh != null) {
                             req.setAttribute("receiptCustomerName", kh.getTenKH());
-                            req.setAttribute("receiptCustomerPhone", kh.getDiaChi());
+                            req.setAttribute("receiptCustomerPhone", kh.getSoDienThoai());
                         }
                     }
 

@@ -2,6 +2,7 @@
 <%@ page import="java.util.List" %>
 <%@ page import="com.example.Entity.*" %>
 <%@ page import="java.time.format.DateTimeFormatter" %>
+<%@ page import="java.time.LocalDateTime" %>
 
 <%
     NguoiDung currentUser = (NguoiDung) session.getAttribute("currentUser");
@@ -48,10 +49,14 @@
         <nav class="nav-actions">
             <a class="nav-link" href="index">Trang chính</a>
             <a class="nav-link" href="hoadon?action=list">Danh sách hóa đơn</a>
+            <% if ("QuanLy".equals(currentUser.getVaiTro())) { %>
+              <a class="nav-link" href="quanly">Quản lý</a>
+            <% } %>
             <a class="nav-link" href="logout">Đăng xuất</a>
         </nav>
     </header>
 
+    <% if ("NhanVien".equals(currentUser.getVaiTro())) { %>
     <section class="dashboard-grid">
         <div class="panel">
             <div class="panel-header">
@@ -107,6 +112,23 @@
                 <% if (currentHD != null) { %>
                 <span class="status done">HD <%= currentHD.getMaHD() %></span>
                 <% } %>
+                <div style="margin-top:8px;">
+                  <!-- Search in dashboard should go to HoaDonController so results stay on index.jsp -->
+                  <%-- Only allow searching menu when a table/hóa đơn is opened (currentHD) --%>
+                  <% if (currentHD != null && "Đang phục vụ".equals(currentHD.getTrangThai())) { %>
+                    <form action="hoadon" method="get" style="display:inline-flex; gap:6px; align-items:center;">
+                        <input type="hidden" name="action" value="open" />
+                        <input type="hidden" name="maHD" value="<%= currentHD.getMaHD() %>" />
+                        <input type="text" name="monSearch" placeholder="Tìm mã/tên món" value="<%= request.getAttribute("monSearch") != null ? request.getAttribute("monSearch") : "" %>" />
+                        <button type="submit">Tìm</button>
+                    </form>
+                  <% } else { %>
+                    <div style="display:inline-flex; gap:6px; align-items:center;">
+                        <input type="text" placeholder="Bạn phải đặt bàn trước để tìm món" disabled style="opacity:0.7;" />
+                        <button type="button" onclick="window.location.href='ban?action=list'" title="Đặt bàn">Đặt bàn</button>
+                    </div>
+                  <% } %>
+                </div>
             </div>
             <div class="panel-body table-wrap">
                 <% if (currentHD != null && !"Đã thanh toán".equals(currentHD.getTrangThai())) { %>
@@ -168,7 +190,12 @@
             <div class="panel-header">
                 <h2>Danh sách hóa đơn</h2>
                 <span class="status done"><%= listHD == null ? 0 : listHD.size() %> hóa đơn</span>
-                <div style="margin-top: 10px; font-size: 0.9em;">
+                <div style="margin-top: 10px; font-size: 0.9em; display:flex; gap:8px; align-items:center;">
+                  <form action="hoadon" method="get" style="display:inline-flex; gap:6px; align-items:center;">
+                    <input type="hidden" name="action" value="list" />
+                    <input type="text" name="hdSearch" placeholder="Tìm HD/Mã bàn/Mã NV" value="<%= request.getAttribute("hdSearch") != null ? request.getAttribute("hdSearch") : "" %>" />
+                    <button type="submit">Tìm</button>
+                  </form>
                     <%
                         String currentSort = (String) request.getAttribute("sort");
                         if (currentSort == null) currentSort = "DESC";
@@ -307,16 +334,27 @@
                         <select id="voucherSelect" name="maVoucher" onchange="calculatePrice()">
                             <option value="">-- Không áp dụng voucher --</option>
                             <% if (listVoucher != null) {
+                                LocalDateTime now = LocalDateTime.now();
                                 for (Voucher v : listVoucher) {
                                     boolean eligible = orderTotal >= v.getDonGiaTuoiNhap() || maxItemValue >= v.getDonGiaTuoiNhap();
                                     boolean selected = selectedVoucherCode.equals(v.getMaVoucher());
+                                    boolean active = v.isConThe(now);
+                                    boolean expired = v.getNgayKetThuc().isBefore(now);
+                                    boolean notStarted = v.getNgayBatDau().isAfter(now);
+                                    boolean noUses = v.getSoLanConLai() <= 0;
                             %>
                             <option value="<%= v.getMaVoucher() %>" data-loai="<%= v.getLoaiGiamGia() %>"
                                     data-value="<%= (long) v.getGiaTriGiamGia() %>"
                                     data-min="<%= (long) v.getDonGiaTuoiNhap() %>" data-label="<%= v.getTenVoucher() %>"
-                                    data-eligible="<%= eligible %>" <%= selected ? "selected" : "" %>>
-                                <%= v.getTenVoucher() %> <% if (eligible) { %>(Có thể dùng)<% } else { %>(Cần tối
-                                thiểu <%= String.format("%,d", (long) v.getDonGiaTuoiNhap()) %> đ)<% } %>
+                                    data-eligible="<%= eligible %>" data-active="<%= active %>" data-remaining="<%= v.getSoLanConLai() %>" data-expired="<%= expired %>" data-notstarted="<%= notStarted %>" <%= selected ? "selected" : "" %>>
+                                <%= v.getTenVoucher() %>
+                                <% if (!active) { %>
+                                    <% if (!v.isTrangThai()) { %>(Vô hiệu hóa)<% } else if (noUses) { %>(Hết lượt)<% } else if (expired) { %>(Hết hạn)<% } else if (notStarted) { %>(Chưa đến ngày áp dụng)<% } %>
+                                <% } else if (eligible) { %>
+                                    (Có thể dùng)
+                                <% } else { %>
+                                    (Cần tối thiểu <%= String.format("%,d", (long) v.getDonGiaTuoiNhap()) %> đ)
+                                <% } %>
                             </option>
                             <% }
                             } %>
@@ -344,7 +382,7 @@
                                 <span class="summary-value"
                                       id="priceOriginal"><%= String.format("%,d", (long) orderTotal) %> đ</span>
                             </div>
-                            
+
                             <div class="summary-row">
                                 <span class="summary-label">Giảm giá</span>
                                 <span class="summary-value" id="priceDiscount">0 đ</span>
@@ -399,8 +437,8 @@
                 </div>
                 <% } %>
 
-                <!-- Hủy đơn (ẩn khi xem read-only) -->
-                <% if (!viewOnly) { %>
+                <!-- Hủy đơn: chỉ hiển thị khi không ở chế độ viewOnly và hóa đơn chưa được thanh toán -->
+                <% if (!viewOnly && currentHD != null && !"Đã thanh toán".equals(currentHD.getTrangThai())) { %>
                 <form action="hoadon" method="post" class="inline-form">
                     <input type="hidden" name="action" value="cancel">
                     <input type="hidden" name="maHD" value="<%= currentHD.getMaHD() %>">
@@ -441,7 +479,7 @@
                         <td><strong><%= ct.getSoLuong() * ct.getDonGia() %>
                         </strong></td>
                         <td>
-                            <% if (!viewOnly) { %>
+                            <% if (!viewOnly && currentHD != null && !"Đã thanh toán".equals(currentHD.getTrangThai())) { %>
                             <div class="table-actions" style="white-space:nowrap;">
                                 <!-- Form sửa số lượng -->
                                 <form action="chitiethoadon" method="post" class="inline-form">
@@ -486,6 +524,23 @@
             </div>
         </div>
     </section>
+    <% } else { %>
+    <section class="dashboard-grid">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Bảng điều khiển quản lý</h2>
+        </div>
+        <div class="panel-body">
+          <div class="manager-grid">
+            <a class="manager-tile" href="ban?action=list">Quản lý bàn</a>
+            <a class="manager-tile" href="thucdon?action=list">Quản lý món</a>
+            <a class="manager-tile" href="nguoidung?action=list">Quản lý nhân viên</a>
+            <a class="manager-tile" href="voucher?action=list">Quản lý voucher</a>
+          </div>
+        </div>
+      </div>
+    </section>
+    <% } %>
 </main>
 <script>
     // Tính giá khi chọn voucher
@@ -496,19 +551,49 @@
         var priceDiscount = 0;
         var priceFinal = originalTotal;
 
+        removeExistingMessage();
+
         if (voucherSelect && voucherSelect.value) {
             var selectedOption = voucherSelect.options[voucherSelect.selectedIndex];
             var loai = selectedOption.getAttribute('data-loai');
             var giaTriGiamGia = parseFloat(selectedOption.getAttribute('data-value')) || 0;
             var donGiaTuoiNhap = parseFloat(selectedOption.getAttribute('data-min')) || 0;
+            var active = selectedOption.getAttribute('data-active') === 'true';
+            var remaining = parseInt(selectedOption.getAttribute('data-remaining')) || 0;
+            var expired = selectedOption.getAttribute('data-expired') === 'true';
+            var notStarted = selectedOption.getAttribute('data-notstarted') === 'true';
 
-            if (originalTotal >= donGiaTuoiNhap || itemMax >= donGiaTuoiNhap) {
+            if (!active) {
+                var reason = 'Voucher không thể dùng';
+                if (!selectedOption) reason = 'Voucher không hợp lệ';
+                else if (!selectedOption.getAttribute('data-active')) reason = 'Voucher vô hiệu hóa';
+                if (remaining === 0) reason = 'Voucher đã hết lượt sử dụng';
+                if (expired) reason = 'Voucher đã hết hạn';
+                if (notStarted) reason = 'Voucher chưa tới ngày áp dụng';
+
+                var payForm = document.getElementById('payForm');
+                var p = document.createElement('p');
+                p.className = 'notice error client-error';
+                p.textContent = reason + '. Vui lòng chọn voucher khác.';
+                payForm.insertBefore(p, payForm.firstChild);
+
+                // no discount applied
+                priceDiscount = 0;
+                priceFinal = originalTotal;
+            } else if (originalTotal >= donGiaTuoiNhap || itemMax >= donGiaTuoiNhap) {
                 if (loai === 'TienMat') {
                     priceDiscount = giaTriGiamGia;
                 } else {
                     priceDiscount = originalTotal * giaTriGiamGia / 100;
                 }
                 priceFinal = originalTotal - priceDiscount;
+            } else {
+                // Not meeting min amount — show gentle notice
+                var payForm2 = document.getElementById('payForm');
+                var p2 = document.createElement('p');
+                p2.className = 'notice error client-error';
+                p2.textContent = 'Đơn hàng chưa đủ điều kiện tối thiểu để dùng voucher này.';
+                payForm2.insertBefore(p2, payForm2.firstChild);
             }
         }
 
@@ -638,6 +723,12 @@
                     customerPhoneEl.focus();
                 } else if (givenEl) {
                     givenEl.focus();
+                }
+            } else {
+                // Confirm before submitting payment
+                if (!confirm('Xác nhận thanh toán?')) {
+                    e.preventDefault();
+                    return;
                 }
             }
         });

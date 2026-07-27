@@ -55,16 +55,25 @@ public class ThucDonController extends HttpServlet {
                     if (sizeParam != null) {
                         try { pageSize = Integer.parseInt(sizeParam); if (pageSize < 1) pageSize = 10; } catch (NumberFormatException ignored) {}
                     }
-                    int total = dao.countAll();
+                    String monSearch = req.getParameter("monSearch");
+                    int total;
+                    if (monSearch != null && !monSearch.trim().isEmpty()) {
+                        total = dao.countSearch(monSearch.trim());
+                    } else {
+                        total = dao.countAll();
+                    }
                     int totalPages = (int) Math.ceil((double) total / pageSize);
                     if (page > totalPages && totalPages > 0) page = totalPages;
                     int offset = (page - 1) * pageSize;
 
-                    req.setAttribute("listMon", dao.getPage(offset, pageSize));
+                    List<ThucDon> monList = dao.getPageSearch(offset, pageSize, monSearch);
+
+                    req.setAttribute("listMon", monList);
                     req.setAttribute("monTotal", total);
                     req.setAttribute("monTotalPages", totalPages);
                     req.setAttribute("monCurrentPage", page);
                     req.setAttribute("monPageSize", pageSize);
+                    req.setAttribute("monSearch", monSearch != null ? monSearch : "");
 
                     RequestDispatcher rd = req.getRequestDispatcher("quanlyMon.jsp");
                     rd.forward(req, resp);

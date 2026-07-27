@@ -7,10 +7,12 @@ import com.example.Dao.ThucDonDAO;
 import com.example.Dao.ChiTietHoaDonDAO;
 import com.example.Dao.NguoiDungDAO;
 import com.example.Dao.VoucherDAO;
+import com.example.Dao.VoucherUsageDAO;
 import com.example.Entity.Ban;
 import com.example.Entity.HoaDon;
 import com.example.Entity.NguoiDung;
 import com.example.Entity.Voucher;
+import com.example.Entity.VoucherUsage;
 import com.example.JDBC.DBConnect;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
@@ -34,6 +36,7 @@ public class HoaDonController extends HttpServlet {
     private ChiTietHoaDonDAO ctDao;
     private NguoiDungDAO nguoiDungDao;
     private VoucherDAO voucherDao;
+    private VoucherUsageDAO voucherUsageDao;
     private Connection conn;
 
     @Override
@@ -45,6 +48,7 @@ public class HoaDonController extends HttpServlet {
         thucDonDao = new ThucDonDAO(conn);
         ctDao = new ChiTietHoaDonDAO(conn);
         voucherDao = new VoucherDAO(conn);
+        voucherUsageDao = new VoucherUsageDAO(conn);
         nguoiDungDao = new NguoiDungDAO(conn);
     }
 
@@ -73,17 +77,23 @@ public class HoaDonController extends HttpServlet {
                         sortParam = "DESC"; // Mặc định sắp xếp mới nhất trước
                     }
 
-                    int totalHD = hoaDonDao.countAll();
+                    String hdSearch = req.getParameter("hdSearch");
+                    int totalHD;
+                    if (hdSearch != null && !hdSearch.trim().isEmpty()) {
+                        totalHD = hoaDonDao.countSearch(hdSearch.trim());
+                    } else {
+                        totalHD = hoaDonDao.countAll();
+                    }
                     int totalPages = (int) Math.ceil((double) totalHD / pageSize);
                     if (page > totalPages && totalPages > 0) page = totalPages;
                     int offset = (page - 1) * pageSize;
 
-                    req.setAttribute("listHD", hoaDonDao.getPage(offset, pageSize, sortParam));
+                    req.setAttribute("listHD", hoaDonDao.getPageSearch(offset, pageSize, sortParam, hdSearch));
                     req.setAttribute("sort", sortParam); // Lưu sort direction cho JSP
+                    req.setAttribute("hdSearch", hdSearch != null ? hdSearch : "");
 
-                    // Load danh sách voucher có thể sử dụng
-                    req.setAttribute("listVoucher", voucherDao.getAvailable(LocalDateTime.now()));
-
+                    // Load danh sách voucher (hiển thị toàn bộ trong UI); validation chỉ khi áp dụng
+                    req.setAttribute("listVoucher", voucherDao.getAll());
                     // pagination for Ban shown in dashboard (banPage / banSize)
                     int banPage = 1;
                     int banPageSize = 10;
@@ -110,21 +120,33 @@ public class HoaDonController extends HttpServlet {
                     int monPageSize = 10;
                     String monPageParam = req.getParameter("monPage");
                     String monSizeParam = req.getParameter("monSize");
+                    String monSearch = req.getParameter("monSearch");
                     if (monPageParam != null) {
                         try { monPage = Integer.parseInt(monPageParam); if (monPage < 1) monPage = 1; } catch (NumberFormatException ignored) {}
                     }
                     if (monSizeParam != null) {
                         try { monPageSize = Integer.parseInt(monSizeParam); if (monPageSize < 1) monPageSize = 10; } catch (NumberFormatException ignored) {}
                     }
-                    int monTotal = thucDonDao.countAll();
+                    int monTotal;
+                    if (monSearch != null && !monSearch.trim().isEmpty()) {
+                        monTotal = thucDonDao.countSearch(monSearch.trim());
+                    } else {
+                        monTotal = thucDonDao.countAll();
+                    }
                     int monTotalPages = (int) Math.ceil((double) monTotal / monPageSize);
                     if (monPage > monTotalPages && monTotalPages > 0) monPage = monTotalPages;
                     int monOffset = (monPage - 1) * monPageSize;
-                    req.setAttribute("listMon", thucDonDao.getPage(monOffset, monPageSize));
+
+                    if (monSearch != null && !monSearch.trim().isEmpty()) {
+                        req.setAttribute("listMon", thucDonDao.getPageSearch(monOffset, monPageSize, monSearch.trim()));
+                    } else {
+                        req.setAttribute("listMon", thucDonDao.getPage(monOffset, monPageSize));
+                    }
                     req.setAttribute("monTotal", monTotal);
                     req.setAttribute("monTotalPages", monTotalPages);
                     req.setAttribute("monCurrentPage", monPage);
                     req.setAttribute("monPageSize", monPageSize);
+                    req.setAttribute("monSearch", monSearch != null ? monSearch : "");
 
                     req.setAttribute("totalHD", totalHD);
                     req.setAttribute("totalPages", totalPages);
@@ -190,10 +212,16 @@ public class HoaDonController extends HttpServlet {
                         // Load all necessary data for editing
                         req.setAttribute("currentHD", hdOpen);
                         req.setAttribute("listBan", banDao.getPage(openBanOffset, openBanPageSize));
-                        req.setAttribute("listMon", thucDonDao.getPage(openMonOffset, openMonPageSize));
+                        String openMonSearch = req.getParameter("monSearch");
+                        if (openMonSearch != null && !openMonSearch.trim().isEmpty()) {
+                            req.setAttribute("listMon", thucDonDao.getPageSearch(openMonOffset, openMonPageSize, openMonSearch.trim()));
+                            req.setAttribute("monSearch", openMonSearch.trim());
+                        } else {
+                            req.setAttribute("listMon", thucDonDao.getPage(openMonOffset, openMonPageSize));
+                        }
                         req.setAttribute("listHD", hoaDonDao.getPage(0, 10, "DESC"));
                         req.setAttribute("listCTHD", ctDao.findByHoaDon(maHDOpen));
-                        req.setAttribute("listVoucher", voucherDao.getAvailable(LocalDateTime.now()));
+                        req.setAttribute("listVoucher", voucherDao.getAll());
 
                         // Set pagination info for menu
                         req.setAttribute("monTotal", openMonTotal);
@@ -315,6 +343,20 @@ public class HoaDonController extends HttpServlet {
                 hd.setTongTien(orderTotal);
                 hd.setMaVoucher(null);
 
+                // Find or create customer by phone
+                String maKH = null;
+                com.example.Entity.KhachHang khachHang = null;
+                if (customerPhone != null && !customerPhone.trim().isEmpty()) {
+                    khachHang = khachHangDao.findBySoDienThoai(customerPhone.trim());
+                }
+                if (khachHang != null) {
+                    maKH = khachHang.getMaKH();
+                } else if (customerName != null && !customerName.trim().isEmpty()) {
+                    maKH = "KH" + System.currentTimeMillis();
+                    khachHang = new com.example.Entity.KhachHang(maKH, customerName, customerPhone);
+                    khachHangDao.insert(khachHang);
+                }
+
                 double finalAmount = orderTotal;
                 double discountAmount = 0.0;
                 Voucher selectedVoucher = null;
@@ -324,6 +366,9 @@ public class HoaDonController extends HttpServlet {
                         errorMessage = "Voucher không tồn tại!";
                     } else if (!selectedVoucher.isConThe(LocalDateTime.now())) {
                         errorMessage = "Voucher không còn hiệu lực!";
+                    } else if (maKH != null && voucherUsageDao.countUsageByKhachHangAndVoucher(maKH, selectedVoucherCode) > 0) {
+                        // Khách hàng này đã dùng voucher này rồi
+                        errorMessage = "Khách hàng đã dùng voucher này rồi, không được dùng lại!";
                     } else if (selectedVoucher.getDonGiaTuoiNhap() > orderTotal) {
                         errorMessage = "Đơn hàng chưa đủ giá trị tối thiểu để dùng voucher này.";
                     } else {
@@ -349,7 +394,7 @@ public class HoaDonController extends HttpServlet {
                     req.setAttribute("listMon", thucDonDao.getPage(0, 10));
                     req.setAttribute("listHD", hoaDonDao.getPage(0, 10, "DESC"));
                     req.setAttribute("listCTHD", ctDao.findByHoaDon(maHD));
-                    req.setAttribute("listVoucher", voucherDao.getAvailable(LocalDateTime.now()));
+                        req.setAttribute("listVoucher", voucherDao.getAll());
                     RequestDispatcher rd = req.getRequestDispatcher("index.jsp");
                     rd.forward(req, resp);
                     return;
@@ -358,15 +403,21 @@ public class HoaDonController extends HttpServlet {
                 if (tienKhachDua >= finalAmount) {
                     hd.setTongTien(finalAmount);
                     hd.setTrangThai("Đã thanh toán");
-                    if (customerName != null && !customerName.trim().isEmpty()) {
-                        String maKH = "KH" + System.currentTimeMillis();
-                        com.example.Entity.KhachHang kh = new com.example.Entity.KhachHang(maKH, customerName, customerPhone);
-                        khachHangDao.insert(kh);
-                        hd.setMaKH(maKH);
-                    }
+                    hd.setMaKH(maKH);
                     hoaDonDao.update(hd);
 
-                    if (selectedVoucher != null) {
+                    // Insert voucher usage record and decrement usage count
+                    if (selectedVoucher != null && maKH != null) {
+                        String maVoucherUsage = "VU" + System.currentTimeMillis();
+                        com.example.Entity.VoucherUsage vu = new com.example.Entity.VoucherUsage(
+                            maVoucherUsage,
+                            selectedVoucher.getMaVoucher(),
+                            maKH,
+                            LocalDateTime.now(),
+                            maHD,
+                            discountAmount
+                        );
+                        voucherUsageDao.insert(vu);
                         voucherDao.decrementUsage(selectedVoucher.getMaVoucher());
                     }
 
@@ -395,7 +446,7 @@ public class HoaDonController extends HttpServlet {
                 req.setAttribute("listMon", thucDonDao.getPage(0, 10));
                 req.setAttribute("listHD", hoaDonDao.getPage(0, 10, "DESC"));
                 req.setAttribute("listCTHD", ctDao.findByHoaDon(maHD));
-                req.setAttribute("listVoucher", voucherDao.getAvailable(LocalDateTime.now()));
+                req.setAttribute("listVoucher", voucherDao.getAll());
 
                 RequestDispatcher rd = req.getRequestDispatcher("index.jsp");
                 rd.forward(req, resp);

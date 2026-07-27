@@ -25,7 +25,7 @@
     </div>
 
     <nav class="nav-actions">
-      <a class="nav-link" href="index">Trang phục vụ</a>
+      <!-- Trang phục vụ đã ẩn cho role quản lý -->
       <a class="nav-link" href="logout">Đăng xuất</a>
     </nav>
   </header>

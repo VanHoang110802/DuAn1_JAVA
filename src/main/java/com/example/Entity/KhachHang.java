@@ -3,14 +3,14 @@ package com.example.Entity;
 public class KhachHang {
     private String maKH;
     private String tenKH;
-    private String diaChi;
+    private String soDienThoai;
 
     public KhachHang() {}
 
-    public KhachHang(String maKH, String tenKH, String diaChi) {
+    public KhachHang(String maKH, String tenKH, String soDienThoai) {
         this.maKH = maKH;
         this.tenKH = tenKH;
-        this.diaChi = diaChi;
+        this.soDienThoai = soDienThoai;
     }
 
     public String getMaKH() { return maKH; }
@@ -19,7 +19,7 @@ public class KhachHang {
     public String getTenKH() { return tenKH; }
     public void setTenKH(String tenKH) { this.tenKH = tenKH; }
 
-    public String getDiaChi() { return diaChi; }
-    public void setDiaChi(String diaChi) { this.diaChi = diaChi; }
+    public String getSoDienThoai() { return soDienThoai; }
+    public void setSoDienThoai(String soDienThoai) { this.soDienThoai = soDienThoai; }
 }
 

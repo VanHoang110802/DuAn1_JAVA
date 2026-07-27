@@ -21,11 +21,28 @@ public class KhachHangDAO {
                 list.add(new KhachHang(
                         rs.getString("MaKH"),
                         rs.getString("TenKH"),
-                        rs.getString("DiaChi")
+                                        rs.getString("SoDienThoai")
                 ));
             }
         }
         return list;
+    }
+
+    public KhachHang findBySoDienThoai(String soDienThoai) throws SQLException {
+        String sql = "SELECT * FROM KhachHang WHERE SoDienThoai = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, soDienThoai);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return new KhachHang(
+                            rs.getString("MaKH"),
+                            rs.getString("TenKH"),
+                            rs.getString("SoDienThoai")
+                    );
+                }
+            }
+        }
+        return null;
     }
 
     public KhachHang findById(String maKH) throws SQLException {
@@ -37,7 +54,7 @@ public class KhachHangDAO {
                     return new KhachHang(
                             rs.getString("MaKH"),
                             rs.getString("TenKH"),
-                            rs.getString("DiaChi")
+                                    rs.getString("SoDienThoai")
                     );
                 }
             }
@@ -46,20 +63,20 @@ public class KhachHangDAO {
     }
 
     public void insert(KhachHang kh) throws SQLException {
-        String sql = "INSERT INTO KhachHang (MaKH, TenKH, DiaChi) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO KhachHang (MaKH, TenKH, SoDienThoai) VALUES (?, ?, ?)";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, kh.getMaKH());
             ps.setString(2, kh.getTenKH());
-            ps.setString(3, kh.getDiaChi());
+            ps.setString(3, kh.getSoDienThoai());
             ps.executeUpdate();
         }
     }
 
     public void update(KhachHang kh) throws SQLException {
-        String sql = "UPDATE KhachHang SET TenKH=?, DiaChi=? WHERE MaKH=?";
+        String sql = "UPDATE KhachHang SET TenKH=?, SoDienThoai=? WHERE MaKH=?";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, kh.getTenKH());
-            ps.setString(2, kh.getDiaChi());
+            ps.setString(2, kh.getSoDienThoai());
             ps.setString(3, kh.getMaKH());
             ps.executeUpdate();
         }
