@@ -162,5 +162,15 @@ public class VoucherDAO {
                 rs.getBoolean("TrangThai")
         );
     }
+
+    // Cập nhật trạng thái voucher theo ngày hết hạn
+    public void updateExpiredStatus() throws SQLException {
+        String sql = "UPDATE Voucher SET TrangThai = 0 WHERE NgayKetThuc < ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now()));
+            ps.executeUpdate();
+        }
+    }
+
 }
 

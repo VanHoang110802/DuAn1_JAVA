@@ -57,6 +57,9 @@ public class VoucherController extends HttpServlet {
                         return;
                     }
 
+                    // Cập nhật trạng thái hết hạn trước khi hiển thị
+                    voucherDao.updateExpiredStatus();
+
                     int page = 1;
                     int pageSize = 10;
                     String pageParam = req.getParameter("page");

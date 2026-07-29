@@ -1,5 +1,10 @@
 package com.example.Entity;
 
+/**
+ * Entity class đại diện cho Khách hàng
+ * Chứa thông tin cơ bản của khách hàng: mã, tên, số điện thoại
+ * Dùng để lưu trữ, tìm kiếm khách hàng và check lịch sử sử dụng voucher
+ */
 public class KhachHang {
     private String maKH;
     private String tenKH;
