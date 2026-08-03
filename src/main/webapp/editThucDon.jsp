@@ -22,7 +22,7 @@
       <span class="status done"><%= td.getMaItem() %></span>
     </div>
     <div class="panel-body">
-      <form action="thucdon" method="post" class="stack-form">
+      <form action="thucdon" method="post" class="stack-form" enctype="multipart/form-data">
         <input type="hidden" name="action" value="update">
         <input type="hidden" name="maItem" value="<%= td.getMaItem() %>">
         <div class="field">
@@ -40,6 +40,17 @@
         <div class="field">
           <label for="donViTinh">Đơn vị tính</label>
           <input type="text" id="donViTinh" name="donViTinh" value="<%= td.getDonViTinh() %>" required>
+        </div>
+        <div class="field">
+          <label>Ảnh hiện tại</label>
+          <% String img = td.getImagePath(); %>
+          <div>
+            <img src="<%= request.getContextPath() %>/images/<%= (img != null && !img.isEmpty()) ? img : "default-food.png" %>" alt="" style="width:120px;height:90px;object-fit:cover;"/>
+          </div>
+        </div>
+        <div class="field">
+          <label for="image">Thay ảnh (tùy chọn)</label>
+          <input type="file" id="image" name="image" accept="image/*">
         </div>
         <button type="submit">Cập nhật</button>
         <a class="nav-link" href="thucdon?action=list" style="text-align:center;">Quay lại danh sách</a>

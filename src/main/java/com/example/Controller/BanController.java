@@ -1,3 +1,10 @@
+/*
+ * Servlet xử lý các hành động liên quan đến "Bàn" trong ứng dụng nhà hàng:
+ * - Hiển thị danh sách và phân trang bàn (dashboard và trang quản lý)
+ * - CRUD bàn (chỉ cho VaiTrò = QuanLy)
+ * - Xử lý đặt bàn ("datban") và tạo Hóa Đơn mới kèm chi tiết hiển thị
+ * - Chuyển hướng/forward tới các JSP tương ứng (index.jsp, quanlyBan.jsp, editBan.jsp)
+ */
 package com.example.Controller;
 
 import com.example.Dao.BanDAO;

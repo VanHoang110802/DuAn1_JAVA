@@ -40,7 +40,7 @@
         <h2>Thêm món mới</h2>
       </div>
       <div class="panel-body">
-        <form action="thucdon" method="post" class="stack-form">
+        <form action="thucdon" method="post" class="stack-form" enctype="multipart/form-data">
           <input type="hidden" name="action" value="insert">
           <div class="field">
             <label for="maItem">Mã món</label>
@@ -62,6 +62,12 @@
             <label for="donViTinh">Đơn vị tính</label>
             <input type="text" id="donViTinh" name="donViTinh" placeholder="Phần, đĩa, chai..." required>
           </div>
+
+
+          <div class="field">
+            <label for="image">Ảnh món (jpg/png)</label>
+            <input type="file" id="image" name="image" accept="image/*">
+          </div>
           <button type="submit">Thêm món</button>
         </form>
       </div>
@@ -75,11 +81,15 @@
       <div class="panel-body table-wrap">
         <table>
           <tr>
-            <th>Mã món</th><th>Tên món</th><th>Giá</th><th>Loại</th><th>Đơn vị</th><th>Hành động</th>
+            <th>Ảnh</th><th>Mã món</th><th>Tên món</th><th>Giá</th><th>Loại</th><th>Đơn vị</th><th>Hành động</th>
           </tr>
           <% if (listMon != null) {
             for (ThucDon td : listMon) { %>
           <tr>
+            <td>
+              <% String img = td.getImagePath(); %>
+              <img src="<%= request.getContextPath() %>/images/<%= (img != null && !img.isEmpty()) ? img : "default-food.png" %>" alt="" style="width:64px;height:48px;object-fit:cover;"/>
+            </td>
             <td><%= td.getMaItem() %></td>
             <td><strong><%= td.getTenItem() %></strong></td>
             <td><%= td.getGia() %></td>

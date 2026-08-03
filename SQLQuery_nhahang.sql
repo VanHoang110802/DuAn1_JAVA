@@ -45,7 +45,8 @@ CREATE TABLE ThucDon (
     TenItem NVARCHAR(100),
     Gia DECIMAL(12,2),
     Loai NVARCHAR(50),       -- Món ăn / Đồ uống
-    DonViTinh NVARCHAR(50)   -- Đĩa, bát, chai, lon...
+    DonViTinh NVARCHAR(50),  -- Đĩa, bát, chai, lon...
+    ImagePath NVARCHAR(255) NULL -- tên file ảnh (ví dụ 'phoBo.jpg')
 );
 
 -- Bảng Chi tiết hóa đơn
@@ -111,22 +112,22 @@ INSERT INTO Ban VALUES ('B015', 10, 0);
 INSERT INTO Ban VALUES ('B016', 2, 0);
 
 -- Dữ liệu mẫu Thực đơn
-INSERT INTO ThucDon VALUES ('TD01', N'Phở bò', 40000, N'Món ăn', N'Bát');
-INSERT INTO ThucDon VALUES ('TD02', N'Cơm gà', 50000, N'Món ăn', N'Đĩa');
-INSERT INTO ThucDon VALUES ('TD03', N'Coca-Cola', 15000, N'Đồ uống', N'Lon');
-INSERT INTO ThucDon VALUES ('TD04', N'Trà đá', 5000, N'Đồ uống', N'Cốc');
-INSERT INTO ThucDon VALUES ('TD05', N'Bia Hà Nội', 20000, N'Đồ uống', N'Chai');
-INSERT INTO ThucDon VALUES ('TD06', N'Cơm tấm', 45000, N'Món ăn', N'Đĩa');
-INSERT INTO ThucDon VALUES ('TD07', N'Bún chả', 48000, N'Món ăn', N'Bát');
-INSERT INTO ThucDon VALUES ('TD08', N'Bánh mì', 25000, N'Món ăn', N'Cái');
-INSERT INTO ThucDon VALUES ('TD09', N'Nước cam', 18000, N'Đồ uống', N'Cốc');
-INSERT INTO ThucDon VALUES ('TD10', N'Cà phê đen', 12000, N'Đồ uống', N'Cốc');
-INSERT INTO ThucDon VALUES ('TD11', N'Gà rán', 55000, N'Món ăn', N'Phần');
-INSERT INTO ThucDon VALUES ('TD12', N'Tôm nướng', 60000, N'Món ăn', N'Phần');
-INSERT INTO ThucDon VALUES ('TD13', N'Mực xào', 52000, N'Món ăn', N'Phần');
-INSERT INTO ThucDon VALUES ('TD14', N'Sinh tố', 22000, N'Đồ uống', N'Cốc');
-INSERT INTO ThucDon VALUES ('TD15', N'Nước lọc', 3000, N'Đồ uống', N'Chai');
-INSERT INTO ThucDon VALUES ('TD16', N'Rau muống xào', 28000, N'Món ăn', N'Đĩa');
+INSERT INTO ThucDon VALUES ('TD01', N'Phở bò', 40000, N'Món ăn', N'Bát', 'phoBo.jpg');
+INSERT INTO ThucDon VALUES ('TD02', N'Cơm gà', 50000, N'Món ăn', N'Đĩa', 'comGa.jpg');
+INSERT INTO ThucDon VALUES ('TD03', N'Coca-Cola', 15000, N'Đồ uống', N'Lon', 'coCaCoLa.jpg');
+INSERT INTO ThucDon VALUES ('TD04', N'Trà đá', 5000, N'Đồ uống', N'Cốc', 'traDa.jpg');
+INSERT INTO ThucDon VALUES ('TD05', N'Bia Hà Nội', 20000, N'Đồ uống', N'Chai', 'biaHaNoi.jpg');
+INSERT INTO ThucDon VALUES ('TD06', N'Cơm tấm', 45000, N'Món ăn', N'Đĩa', 'comTam.jpg');
+INSERT INTO ThucDon VALUES ('TD07', N'Bún chả', 48000, N'Món ăn', N'Bát', 'bunCha.jpg');
+INSERT INTO ThucDon VALUES ('TD08', N'Bánh mì', 25000, N'Món ăn', N'Cái', 'banhMi.jpg');
+INSERT INTO ThucDon VALUES ('TD09', N'Nước cam', 18000, N'Đồ uống', N'Cốc', 'nuocCam.jpg');
+INSERT INTO ThucDon VALUES ('TD10', N'Cà phê đen', 12000, N'Đồ uống', N'Cốc', 'caPheDen.jpg');
+INSERT INTO ThucDon VALUES ('TD11', N'Gà rán', 55000, N'Món ăn', N'Phần', 'gaRan.jpg');
+INSERT INTO ThucDon VALUES ('TD12', N'Tôm nướng', 60000, N'Món ăn', N'Phần', 'tomNuong.jpg');
+INSERT INTO ThucDon VALUES ('TD13', N'Mực xào', 52000, N'Món ăn', N'Phần', 'mucXao.jpg');
+INSERT INTO ThucDon VALUES ('TD14', N'Sinh tố', 22000, N'Đồ uống', N'Cốc', 'sinhTo.jpg');
+INSERT INTO ThucDon VALUES ('TD15', N'Nước lọc', 3000, N'Đồ uống', N'Chai', 'nuocLoc.jpg');
+INSERT INTO ThucDon VALUES ('TD16', N'Rau muống xào', 28000, N'Món ăn', N'Đĩa', 'rauMuongXao.jpg');
 
 -- Dữ liệu mẫu Voucher
 INSERT INTO Voucher VALUES

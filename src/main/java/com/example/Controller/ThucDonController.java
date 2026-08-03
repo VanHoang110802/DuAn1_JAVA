@@ -5,17 +5,22 @@ import com.example.Entity.ThucDon;
 import com.example.JDBC.DBConnect;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.Part;
 
 import java.io.IOException;
 import java.sql.Connection;
 import java.util.List;
 
 @WebServlet("/thucdon")
+@MultipartConfig(fileSizeThreshold = 1024 * 1024, // 1MB
+        maxFileSize = 1024 * 1024 * 5,   // 5MB
+        maxRequestSize = 1024 * 1024 * 10) // 10MB
 public class ThucDonController extends HttpServlet {
     private ThucDonDAO dao;
 
@@ -121,8 +126,21 @@ public class ThucDonController extends HttpServlet {
                     double gia = Double.parseDouble(req.getParameter("gia"));
                     String loai = req.getParameter("loai");
                     String donViTinh = req.getParameter("donViTinh");
+                    // Handle image upload
+                    String imagePath = null;
+                    Part imagePart = req.getPart("image");
+                    if (imagePart != null && imagePart.getSize() > 0) {
+                        String submitted = java.nio.file.Paths.get(imagePart.getSubmittedFileName()).getFileName().toString();
+                        String safeName = System.currentTimeMillis() + "_" + submitted;
+                        String imagesDir = getServletContext().getRealPath("/images");
+                        java.io.File uploads = new java.io.File(imagesDir);
+                        if (!uploads.exists()) uploads.mkdirs();
+                        String full = new java.io.File(uploads, safeName).getAbsolutePath();
+                        imagePart.write(full);
+                        imagePath = safeName;
+                    }
 
-                    ThucDon td = new ThucDon(maItem, tenItem, gia, loai, donViTinh);
+                    ThucDon td = new ThucDon(maItem, tenItem, gia, loai, donViTinh, imagePath);
                     dao.insert(td);
                     resp.sendRedirect("thucdon?action=list");
                     break;
@@ -133,8 +151,25 @@ public class ThucDonController extends HttpServlet {
                     double gia = Double.parseDouble(req.getParameter("gia"));
                     String loai = req.getParameter("loai");
                     String donViTinh = req.getParameter("donViTinh");
+                    // Handle image upload: if no new file, keep existing imagePath
+                    String imagePath = null;
+                    Part imagePart = req.getPart("image");
+                    if (imagePart != null && imagePart.getSize() > 0) {
+                        String submitted = java.nio.file.Paths.get(imagePart.getSubmittedFileName()).getFileName().toString();
+                        String safeName = System.currentTimeMillis() + "_" + submitted;
+                        String imagesDir = getServletContext().getRealPath("/images");
+                        java.io.File uploads = new java.io.File(imagesDir);
+                        if (!uploads.exists()) uploads.mkdirs();
+                        String full = new java.io.File(uploads, safeName).getAbsolutePath();
+                        imagePart.write(full);
+                        imagePath = safeName;
+                    } else {
+                        // keep existing
+                        ThucDon existing = dao.findById(maItem);
+                        if (existing != null) imagePath = existing.getImagePath();
+                    }
 
-                    ThucDon td = new ThucDon(maItem, tenItem, gia, loai, donViTinh);
+                    ThucDon td = new ThucDon(maItem, tenItem, gia, loai, donViTinh, imagePath);
                     dao.update(td);
                     resp.sendRedirect("thucdon?action=list");
                     break;

@@ -134,6 +134,7 @@
                 <% if (currentHD != null && !"Đã thanh toán".equals(currentHD.getTrangThai())) { %>
                 <table>
                     <tr>
+                        <th>Ảnh</th>
                         <th>Mã món</th>
                         <th>Tên món</th>
                         <th>Giá</th>
@@ -143,6 +144,10 @@
                     <% if (listMon != null) {
                         for (ThucDon td : listMon) { %>
                     <tr>
+                        <td>
+                            <% String img = td.getImagePath(); %>
+                            <img src="<%= request.getContextPath() %>/images/<%= (img != null && !img.isEmpty()) ? img : "default-food.png" %>" alt="" style="width:64px;height:48px;object-fit:cover;"/>
+                        </td>
                         <td><%= td.getMaItem() %>
                         </td>
                         <td><strong><%= td.getTenItem() %>
@@ -298,11 +303,11 @@
                     <input type="hidden" name="maHD" value="<%= currentHD.getMaHD() %>">
                     <div class="field-group">
                         <label>Khách hàng</label>
-                        <input type="text" name="customerName" placeholder="Tên khách"/>
+                        <input id="customerName" type="text" name="customerName" placeholder="Tên khách"/>
                     </div>
                     <div class="field-group">
                         <label>SĐT</label>
-                        <input type="tel" name="customerPhone" placeholder="Số điện thoại"/>
+                        <input id="customerPhone" type="tel" name="customerPhone" placeholder="Số điện thoại"/>
                     </div>
 
                     <%-- Chọn voucher --%>
@@ -367,10 +372,7 @@
 
                     <div class="field-group full-width">
                         <div class="inline-actions">
-                            <button type="button" class="secondary-button"
-                                    onclick="window.location.href='<%= request.getContextPath() %>/hoadon?action=open&maHD=<%= currentHD.getMaHD() %>'">
-                                Tải lại
-                            </button>
+                            <button type="button" class="secondary-button" onclick="reloadVouchers()">Tải lại</button>
                             <button type="submit">Thanh toán</button>
                         </div>
                     </div>
@@ -732,6 +734,113 @@
                 }
             }
         });
+    })();
+
+    // Reload voucher list via AJAX and update the voucher select while preserving other form inputs
+    function reloadVouchers() {
+        var ctx = '<%= request.getContextPath() %>';
+        var voucherSelect = document.getElementById('voucherSelect');
+        if (!voucherSelect) return;
+        var selected = voucherSelect.value;
+        fetch(ctx + '/vouchers', { credentials: 'same-origin' })
+            .then(function (res) { if (!res.ok) throw new Error('network'); return res.json(); })
+            .then(function (data) {
+                // data is an array of voucher objects
+                // rebuild options
+                var firstOption = document.createElement('option');
+                firstOption.value = '';
+                firstOption.textContent = '-- Không áp dụng voucher --';
+                voucherSelect.innerHTML = '';
+                voucherSelect.appendChild(firstOption);
+                data.forEach(function (v) {
+                    var opt = document.createElement('option');
+                    opt.value = v.maVoucher;
+                    opt.setAttribute('data-loai', v.loai);
+                    opt.setAttribute('data-value', v.giaTri);
+                    opt.setAttribute('data-min', v.min);
+                    opt.setAttribute('data-label', v.tenVoucher);
+                    opt.setAttribute('data-active', (!!v.active).toString());
+                    opt.setAttribute('data-remaining', v.remaining);
+                    opt.setAttribute('data-expired', (!!v.expired).toString());
+                    opt.setAttribute('data-notstarted', (!!v.notStarted).toString());
+                    opt.textContent = v.tenVoucher + (v.active ? '' : ' (Không hoạt động)');
+                    voucherSelect.appendChild(opt);
+                });
+                // restore selection if still present
+                if (selected && voucherSelect.querySelector('option[value="' + selected + '"]')) {
+                    voucherSelect.value = selected;
+                } else {
+                    voucherSelect.value = '';
+                }
+                // recalc UI
+                calculatePrice();
+                showTempMessage('Đã cập nhật danh sách voucher', 'success');
+            })
+            .catch(function (err) {
+                console.debug('Failed to reload vouchers', err);
+                showTempMessage('Không thể nạp voucher lúc này', 'error');
+            });
+    }
+
+    function showTempMessage(msg, cls) {
+        var payForm = document.getElementById('payForm');
+        if (!payForm) return;
+        var p = document.createElement('p');
+        p.className = 'notice ' + (cls || 'success') + ' client-info';
+        p.textContent = msg;
+        payForm.insertBefore(p, payForm.firstChild);
+        setTimeout(function () { if (p && p.parentNode) p.parentNode.removeChild(p); }, 3000);
+    }
+
+    // Tự động điền thông tin khách hàng khi nhân viên nhập số điện thoại.
+    (function () {
+        var ctx = '<%= request.getContextPath() %>';
+        var phoneEl = document.getElementById('customerPhone');
+        var nameEl = document.getElementById('customerName');
+        if (!phoneEl || !nameEl) return;
+        var timer = null;
+
+        function showTempMessage(msg, cls) {
+            // reuse removeExistingMessage to avoid clutter
+            removeExistingMessage();
+            var p = document.createElement('p');
+            p.className = 'notice ' + (cls || 'success') + ' client-info';
+            p.textContent = msg;
+            var payForm = document.getElementById('payForm');
+            if (payForm) payForm.insertBefore(p, payForm.firstChild);
+            setTimeout(function () { if (p && p.parentNode) p.parentNode.removeChild(p); }, 4000);
+        }
+
+        function lookup(phone) {
+            fetch(ctx + '/khachhang?phone=' + encodeURIComponent(phone), { credentials: 'same-origin' })
+                .then(function (res) {
+                    if (!res.ok) throw new Error('Network response was not ok');
+                    return res.json();
+                })
+                .then(function (data) {
+                    if (data && data.found) {
+                        nameEl.value = data.tenKH || '';
+                        showTempMessage('Đã nạp thông tin khách cũ: ' + (data.tenKH || ''), 'success');
+                    } else {
+                        showTempMessage('Không tìm thấy khách hàng, vui lòng nhập thông tin mới nếu cần', 'info');
+                    }
+                })
+                .catch(function (err) {
+                    // silent fail — network or server error
+                    console.debug('Lookup error', err);
+                });
+        }
+
+        function scheduleLookup() {
+            var phone = phoneEl.value.trim();
+            if (/^\d{10,11}$/.test(phone)) {
+                if (timer) clearTimeout(timer);
+                timer = setTimeout(function () { lookup(phone); }, 450);
+            }
+        }
+
+        phoneEl.addEventListener('blur', scheduleLookup);
+        phoneEl.addEventListener('keyup', scheduleLookup);
     })();
 </script>
 </body>

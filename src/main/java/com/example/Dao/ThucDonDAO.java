@@ -26,7 +26,8 @@ public class ThucDonDAO {
                     rs.getString("TenItem"),
                     rs.getDouble("Gia"),
                     rs.getString("Loai"),
-                    rs.getString("DonViTinh")
+                    rs.getString("DonViTinh"),
+                    rs.getString("ImagePath")
             );
             list.add(td);
         }
@@ -77,7 +78,8 @@ public class ThucDonDAO {
                                 rs.getString("TenItem"),
                                 rs.getDouble("Gia"),
                                 rs.getString("Loai"),
-                                rs.getString("DonViTinh")
+                                rs.getString("DonViTinh"),
+                                rs.getString("ImagePath")
                         );
                         list.add(td);
                     }
@@ -98,7 +100,8 @@ public class ThucDonDAO {
                                 rs.getString("TenItem"),
                                 rs.getDouble("Gia"),
                                 rs.getString("Loai"),
-                                rs.getString("DonViTinh")
+                                rs.getString("DonViTinh"),
+                                rs.getString("ImagePath")
                         );
                         list.add(td);
                     }
@@ -120,7 +123,8 @@ public class ThucDonDAO {
                     rs.getString("TenItem"),
                     rs.getDouble("Gia"),
                     rs.getString("Loai"),
-                    rs.getString("DonViTinh")
+                    rs.getString("DonViTinh"),
+                    rs.getString("ImagePath")
             );
         }
         return null;
@@ -128,25 +132,27 @@ public class ThucDonDAO {
 
     // Thêm món mới
     public void insert(ThucDon td) throws SQLException {
-        String sql = "INSERT INTO ThucDon VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO ThucDon VALUES (?, ?, ?, ?, ?, ?)";
         PreparedStatement ps = conn.prepareStatement(sql);
         ps.setString(1, td.getMaItem());
         ps.setString(2, td.getTenItem());
         ps.setDouble(3, td.getGia());
         ps.setString(4, td.getLoai());
         ps.setString(5, td.getDonViTinh());
+        ps.setString(6, td.getImagePath());
         ps.executeUpdate();
     }
 
     // Cập nhật món
     public void update(ThucDon td) throws SQLException {
-        String sql = "UPDATE ThucDon SET TenItem=?, Gia=?, Loai=?, DonViTinh=? WHERE MaItem=?";
+        String sql = "UPDATE ThucDon SET TenItem=?, Gia=?, Loai=?, DonViTinh=?, ImagePath=? WHERE MaItem=?";
         PreparedStatement ps = conn.prepareStatement(sql);
         ps.setString(1, td.getTenItem());
         ps.setDouble(2, td.getGia());
         ps.setString(3, td.getLoai());
         ps.setString(4, td.getDonViTinh());
-        ps.setString(5, td.getMaItem());
+        ps.setString(5, td.getImagePath());
+        ps.setString(6, td.getMaItem());
         ps.executeUpdate();
     }
 
