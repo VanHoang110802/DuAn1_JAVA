@@ -62,6 +62,10 @@
             <label for="donViTinh">Đơn vị tính</label>
             <input type="text" id="donViTinh" name="donViTinh" placeholder="Phần, đĩa, chai..." required>
           </div>
+          <div class="field">
+            <label for="soLuong">Số lượng tồn</label>
+            <input type="number" id="soLuong" name="soLuong" min="0" value="0" required>
+          </div>
 
 
           <div class="field">
@@ -79,9 +83,9 @@
         <span class="status done"><%= listMon == null ? 0 : listMon.size() %> món</span>
       </div>
       <div class="panel-body table-wrap">
-        <table>
+          <table>
           <tr>
-            <th>Ảnh</th><th>Mã món</th><th>Tên món</th><th>Giá</th><th>Loại</th><th>Đơn vị</th><th>Hành động</th>
+            <th>Ảnh</th><th>Mã món</th><th>Tên món</th><th>Giá</th><th>Loại</th><th>Đơn vị</th><th>Tồn</th><th>Hành động</th>
           </tr>
           <% if (listMon != null) {
             for (ThucDon td : listMon) { %>
@@ -95,6 +99,7 @@
             <td><%= td.getGia() %></td>
             <td><%= td.getLoai() %></td>
             <td><%= td.getDonViTinh() %></td>
+            <td><%= td.getSoLuong() %></td>
             <td>
               <div class="table-actions">
                 <a class="action-link" href="thucdon?action=edit&maItem=<%= td.getMaItem() %>">Sửa</a>

@@ -57,16 +57,47 @@ public class ChiTietHoaDonController extends HttpServlet {
                     List<ChiTietHoaDon> list = ctDao.findByHoaDon(maHD);
                     for (ChiTietHoaDon item : list) {
                         if (item.getMaItem().equals(maItem)) {
-                            int soLuongMoi = item.getSoLuong() + soLuong;
+                            int add = soLuong;
+                            if (mon.getSoLuong() < add) {
+                                // Không đủ hàng
+                                req.setAttribute("error", "Không đủ tồn kho cho món " + mon.getTenItem() + ". Còn: " + mon.getSoLuong());
+                                // reload view data and forward back
+                                HoaDon hdErr = hoaDonDao.findById(maHD);
+                                req.setAttribute("currentHD", hdErr);
+                                req.setAttribute("listBan", banDao.getPage(0, 10));
+                                req.setAttribute("listMon", thucDonDao.getPage(0, 10));
+                                req.setAttribute("listHD", hoaDonDao.getPage(0, 10, "DESC"));
+                                req.setAttribute("listCTHD", ctDao.findByHoaDon(maHD));
+                                RequestDispatcher rdErr = req.getRequestDispatcher("index.jsp");
+                                rdErr.forward(req, resp);
+                                return;
+                            }
+                            int soLuongMoi = item.getSoLuong() + add;
                             item.setSoLuong(soLuongMoi);
                             ctDao.update(item);
+                            // giảm tồn kho
+                            thucDonDao.changeStock(maItem, -add);
                             break;
                         }
                     }
                 } else {
                     // Nếu chưa có, thì insert mới
+                    if (mon.getSoLuong() < soLuong) {
+                        req.setAttribute("error", "Không đủ tồn kho cho món " + mon.getTenItem() + ". Còn: " + mon.getSoLuong());
+                        HoaDon hdErr = hoaDonDao.findById(maHD);
+                        req.setAttribute("currentHD", hdErr);
+                        req.setAttribute("listBan", banDao.getPage(0, 10));
+                        req.setAttribute("listMon", thucDonDao.getPage(0, 10));
+                        req.setAttribute("listHD", hoaDonDao.getPage(0, 10, "DESC"));
+                        req.setAttribute("listCTHD", ctDao.findByHoaDon(maHD));
+                        RequestDispatcher rdErr = req.getRequestDispatcher("index.jsp");
+                        rdErr.forward(req, resp);
+                        return;
+                    }
                     ChiTietHoaDon ct = new ChiTietHoaDon(maHD, maItem, soLuong, donGia);
                     ctDao.insert(ct);
+                    // giảm tồn kho
+                    thucDonDao.changeStock(maItem, -soLuong);
                 }
 
                 // Cập nhật tổng tiền hóa đơn
@@ -125,9 +156,36 @@ public class ChiTietHoaDonController extends HttpServlet {
                 ThucDon mon = thucDonDao.findById(maItem);
                 double donGia = mon.getGia();
 
+                // Lấy số lượng hiện tại trong chi tiết để tính delta
+                List<ChiTietHoaDon> list = ctDao.findByHoaDon(maHD);
+                int oldQty = 0;
+                for (ChiTietHoaDon item : list) {
+                    if (item.getMaItem().equals(maItem)) {
+                        oldQty = item.getSoLuong();
+                        break;
+                    }
+                }
+                int delta = soLuong - oldQty; // dương = cần giảm thêm tồn kho
+                if (delta > 0) {
+                    if (mon.getSoLuong() < delta) {
+                        req.setAttribute("error", "Không đủ tồn kho cho món " + mon.getTenItem() + ". Còn: " + mon.getSoLuong());
+                        HoaDon hdErr = hoaDonDao.findById(maHD);
+                        req.setAttribute("currentHD", hdErr);
+                        req.setAttribute("listBan", banDao.getPage(0, 10));
+                        req.setAttribute("listMon", thucDonDao.getPage(0, 10));
+                        req.setAttribute("listHD", hoaDonDao.getPage(0, 10, "DESC"));
+                        req.setAttribute("listCTHD", ctDao.findByHoaDon(maHD));
+                        RequestDispatcher rdErr = req.getRequestDispatcher("index.jsp");
+                        rdErr.forward(req, resp);
+                        return;
+                    }
+                }
+
                 // Cập nhật chi tiết hóa đơn
                 ChiTietHoaDon ct = new ChiTietHoaDon(maHD, maItem, soLuong, donGia);
                 ctDao.update(ct);
+                // Điều chỉnh tồn kho
+                if (delta != 0) thucDonDao.changeStock(maItem, -delta);
 
                 // Cập nhật tổng tiền hóa đơn
                 double tongTien = ctDao.tinhTongTien(maHD);
@@ -179,6 +237,18 @@ public class ChiTietHoaDonController extends HttpServlet {
             }else if ("delete".equals(action)) {
                 String maHD = req.getParameter("maHD");
                 String maItem = req.getParameter("maItem");
+
+                // Trả lại tồn kho trước khi xóa
+                List<ChiTietHoaDon> listBefore = ctDao.findByHoaDon(maHD);
+                for (ChiTietHoaDon item : listBefore) {
+                    if (item.getMaItem().equals(maItem)) {
+                        int qty = item.getSoLuong();
+                        if (qty > 0) {
+                            thucDonDao.changeStock(maItem, qty);
+                        }
+                        break;
+                    }
+                }
 
                 ctDao.delete(maHD, maItem);
 

@@ -92,8 +92,9 @@ public class HoaDonController extends HttpServlet {
                     req.setAttribute("sort", sortParam); // Lưu sort direction cho JSP
                     req.setAttribute("hdSearch", hdSearch != null ? hdSearch : "");
 
-                    // Load danh sách voucher (hiển thị toàn bộ trong UI); validation chỉ khi áp dụng
-                    req.setAttribute("listVoucher", voucherDao.getAll());
+                    // Cập nhật trạng thái voucher hết hạn và tải danh sách voucher khả dụng
+                    voucherDao.updateExpiredStatus();
+                    req.setAttribute("listVoucher", voucherDao.getAvailable(LocalDateTime.now()));
                     // pagination for Ban shown in dashboard (banPage / banSize)
                     int banPage = 1;
                     int banPageSize = 10;
@@ -221,7 +222,9 @@ public class HoaDonController extends HttpServlet {
                         }
                         req.setAttribute("listHD", hoaDonDao.getPage(0, 10, "DESC"));
                         req.setAttribute("listCTHD", ctDao.findByHoaDon(maHDOpen));
-                        req.setAttribute("listVoucher", voucherDao.getAll());
+                        // only show available vouchers when opening invoice
+                        voucherDao.updateExpiredStatus();
+                        req.setAttribute("listVoucher", voucherDao.getAvailable(LocalDateTime.now()));
 
                         // Set pagination info for menu
                         req.setAttribute("monTotal", openMonTotal);
@@ -394,7 +397,9 @@ public class HoaDonController extends HttpServlet {
                     req.setAttribute("listMon", thucDonDao.getPage(0, 10));
                     req.setAttribute("listHD", hoaDonDao.getPage(0, 10, "DESC"));
                     req.setAttribute("listCTHD", ctDao.findByHoaDon(maHD));
-                        req.setAttribute("listVoucher", voucherDao.getAll());
+                        // refresh available vouchers for the payment view
+                        voucherDao.updateExpiredStatus();
+                        req.setAttribute("listVoucher", voucherDao.getAvailable(LocalDateTime.now()));
                     RequestDispatcher rd = req.getRequestDispatcher("index.jsp");
                     rd.forward(req, resp);
                     return;
@@ -446,7 +451,9 @@ public class HoaDonController extends HttpServlet {
                 req.setAttribute("listMon", thucDonDao.getPage(0, 10));
                 req.setAttribute("listHD", hoaDonDao.getPage(0, 10, "DESC"));
                 req.setAttribute("listCTHD", ctDao.findByHoaDon(maHD));
-                req.setAttribute("listVoucher", voucherDao.getAll());
+                // refresh available vouchers after processing
+                voucherDao.updateExpiredStatus();
+                req.setAttribute("listVoucher", voucherDao.getAvailable(LocalDateTime.now()));
 
                 RequestDispatcher rd = req.getRequestDispatcher("index.jsp");
                 rd.forward(req, resp);

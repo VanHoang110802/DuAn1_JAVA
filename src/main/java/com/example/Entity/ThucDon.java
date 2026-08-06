@@ -6,6 +6,7 @@ public class ThucDon {
     private double gia;
     private String loai;
     private String donViTinh;
+    private int soLuong; // số lượng tồn kho
     private String imagePath; // tên file ảnh hoặc đường dẫn tương đối trong /images
 
     public ThucDon() {
@@ -25,6 +26,16 @@ public class ThucDon {
         this.gia = gia;
         this.loai = loai;
         this.donViTinh = donViTinh;
+        this.imagePath = imagePath;
+    }
+
+    public ThucDon(String maItem, String tenItem, double gia, String loai, String donViTinh, int soLuong, String imagePath) {
+        this.maItem = maItem;
+        this.tenItem = tenItem;
+        this.gia = gia;
+        this.loai = loai;
+        this.donViTinh = donViTinh;
+        this.soLuong = soLuong;
         this.imagePath = imagePath;
     }
 
@@ -74,5 +85,13 @@ public class ThucDon {
 
     public void setImagePath(String imagePath) {
         this.imagePath = imagePath;
+    }
+
+    public int getSoLuong() {
+        return soLuong;
+    }
+
+    public void setSoLuong(int soLuong) {
+        this.soLuong = soLuong;
     }
 }

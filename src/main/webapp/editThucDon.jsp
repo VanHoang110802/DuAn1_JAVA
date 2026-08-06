@@ -42,6 +42,10 @@
           <input type="text" id="donViTinh" name="donViTinh" value="<%= td.getDonViTinh() %>" required>
         </div>
         <div class="field">
+          <label for="soLuong">Số lượng tồn</label>
+          <input type="number" id="soLuong" name="soLuong" value="<%= td.getSoLuong() %>" min="0" required>
+        </div>
+        <div class="field">
           <label>Ảnh hiện tại</label>
           <% String img = td.getImagePath(); %>
           <div>

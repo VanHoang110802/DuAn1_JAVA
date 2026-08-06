@@ -21,14 +21,15 @@ public class ThucDonDAO {
         ResultSet rs = stmt.executeQuery(sql);
 
         while (rs.next()) {
-            ThucDon td = new ThucDon(
-                    rs.getString("MaItem"),
-                    rs.getString("TenItem"),
-                    rs.getDouble("Gia"),
-                    rs.getString("Loai"),
-                    rs.getString("DonViTinh"),
-                    rs.getString("ImagePath")
-            );
+                        ThucDon td = new ThucDon(
+                                rs.getString("MaItem"),
+                                rs.getString("TenItem"),
+                                rs.getDouble("Gia"),
+                                rs.getString("Loai"),
+                                rs.getString("DonViTinh"),
+                                rs.getInt("SoLuong"),
+                                rs.getString("ImagePath")
+                        );
             list.add(td);
         }
         return list;
@@ -79,6 +80,7 @@ public class ThucDonDAO {
                                 rs.getDouble("Gia"),
                                 rs.getString("Loai"),
                                 rs.getString("DonViTinh"),
+                                rs.getInt("SoLuong"),
                                 rs.getString("ImagePath")
                         );
                         list.add(td);
@@ -101,6 +103,7 @@ public class ThucDonDAO {
                                 rs.getDouble("Gia"),
                                 rs.getString("Loai"),
                                 rs.getString("DonViTinh"),
+                                rs.getInt("SoLuong"),
                                 rs.getString("ImagePath")
                         );
                         list.add(td);
@@ -124,6 +127,7 @@ public class ThucDonDAO {
                     rs.getDouble("Gia"),
                     rs.getString("Loai"),
                     rs.getString("DonViTinh"),
+                    rs.getInt("SoLuong"),
                     rs.getString("ImagePath")
             );
         }
@@ -132,28 +136,40 @@ public class ThucDonDAO {
 
     // Thêm món mới
     public void insert(ThucDon td) throws SQLException {
-        String sql = "INSERT INTO ThucDon VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO ThucDon VALUES (?, ?, ?, ?, ?, ?, ?)";
         PreparedStatement ps = conn.prepareStatement(sql);
         ps.setString(1, td.getMaItem());
         ps.setString(2, td.getTenItem());
         ps.setDouble(3, td.getGia());
         ps.setString(4, td.getLoai());
         ps.setString(5, td.getDonViTinh());
-        ps.setString(6, td.getImagePath());
+        ps.setInt(6, td.getSoLuong());
+        ps.setString(7, td.getImagePath());
         ps.executeUpdate();
     }
 
     // Cập nhật món
     public void update(ThucDon td) throws SQLException {
-        String sql = "UPDATE ThucDon SET TenItem=?, Gia=?, Loai=?, DonViTinh=?, ImagePath=? WHERE MaItem=?";
+        String sql = "UPDATE ThucDon SET TenItem=?, Gia=?, Loai=?, DonViTinh=?, SoLuong=?, ImagePath=? WHERE MaItem=?";
         PreparedStatement ps = conn.prepareStatement(sql);
         ps.setString(1, td.getTenItem());
         ps.setDouble(2, td.getGia());
         ps.setString(3, td.getLoai());
         ps.setString(4, td.getDonViTinh());
-        ps.setString(5, td.getImagePath());
-        ps.setString(6, td.getMaItem());
+        ps.setInt(5, td.getSoLuong());
+        ps.setString(6, td.getImagePath());
+        ps.setString(7, td.getMaItem());
         ps.executeUpdate();
+    }
+
+    // Thay đổi tồn kho (dương = tăng, âm = giảm)
+    public void changeStock(String maItem, int delta) throws SQLException {
+        String sql = "UPDATE ThucDon SET SoLuong = SoLuong + ? WHERE MaItem = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, delta);
+            ps.setString(2, maItem);
+            ps.executeUpdate();
+        }
     }
 
     // Xóa món

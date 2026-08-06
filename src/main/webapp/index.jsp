@@ -154,14 +154,21 @@
                         </strong></td>
                         <td><%= td.getGia() %>
                         </td>
-                        <td colspan="2">
-                            <form action="chitiethoadon" method="post" class="inline-form">
+                        <td>
+                            <%= td.getSoLuong() %>
+                        </td>
+                        <td>
+                            <% if (td.getSoLuong() <= 0) { %>
+                                <span class="status busy">Hết hàng</span>
+                            <% } else { %>
+                            <form action="chitiethoadon" method="post" class="inline-form" onsubmit="if (<%= td.getSoLuong() %> <= 0) { alert('Món này đã hết hàng, không thể thêm'); return false; } return confirm('Thêm món này vào đơn?');">
                                 <input type="hidden" name="action" value="insert">
                                 <input type="hidden" name="maHD" value="<%= currentHD.getMaHD() %>">
                                 <input type="hidden" name="maItem" value="<%= td.getMaItem() %>">
-                                <input type="number" name="soLuong" value="1" min="1">
+                                <input type="number" name="soLuong" value="1" min="1" max="<%= td.getSoLuong() %>">
                                 <button type="submit">Thêm</button>
                             </form>
+                            <% } %>
                         </td>
                     </tr>
                     <% }
@@ -249,7 +256,7 @@
                             </a>
                             <% } %>
                         </td>
-                        <td><%= hd.getNgayLap().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")) %>
+                        <td><%= hd.getNgayLap().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) %>
                         </td>
                         <td><strong><%= (long) hd.getTongTien() %>
                         </strong></td>
@@ -298,7 +305,7 @@
                 <p class="notice error"><%= payError %>
                 </p>
                 <% } %>
-                <form id="payForm" action="hoadon" method="post" class="pay-form">
+                <form id="payForm" action="hoadon" method="post" class="pay-form" onsubmit="return confirm('Xác nhận thanh toán?')">
                     <input type="hidden" name="action" value="pay">
                     <input type="hidden" name="maHD" value="<%= currentHD.getMaHD() %>">
                     <div class="field-group">
@@ -484,7 +491,7 @@
                             <% if (!viewOnly && currentHD != null && !"Đã thanh toán".equals(currentHD.getTrangThai())) { %>
                             <div class="table-actions" style="white-space:nowrap;">
                                 <!-- Form sửa số lượng -->
-                                <form action="chitiethoadon" method="post" class="inline-form">
+                                <form action="chitiethoadon" method="post" class="inline-form" onsubmit="return confirm('Cập nhật số lượng?');">
                                     <input type="hidden" name="action" value="update">
                                     <input type="hidden" name="maHD" value="<%= ct.getMaHD() %>">
                                     <input type="hidden" name="maItem" value="<%= ct.getMaItem() %>">
@@ -493,7 +500,7 @@
                                 </form>
 
                                 <!-- Form xóa món -->
-                                <form action="chitiethoadon" method="post" class="inline-form">
+                                <form action="chitiethoadon" method="post" class="inline-form" onsubmit="return confirm('Xóa món này khỏi đơn?');">
                                     <input type="hidden" name="action" value="delete">
                                     <input type="hidden" name="maHD" value="<%= ct.getMaHD() %>">
                                     <input type="hidden" name="maItem" value="<%= ct.getMaItem() %>">
@@ -713,28 +720,22 @@
             }
 
             // Show error if any
-            if (errorMsg) {
-                e.preventDefault();
-                var p = document.createElement('p');
-                p.className = 'notice error client-error';
-                p.textContent = errorMsg;
-                payForm.insertBefore(p, payForm.firstChild);
-                if (customerNameEl && !customerNameEl.value.trim()) {
-                    customerNameEl.focus();
-                } else if (customerPhoneEl && customerPhoneEl.value.trim() && !/^\d{10,11}$/.test(customerPhoneEl.value.trim())) {
-                    customerPhoneEl.focus();
-                } else if (givenEl) {
-                    givenEl.focus();
-                }
-            } else {
-                // Confirm before submitting payment
-                if (!confirm('Xác nhận thanh toán?')) {
+                if (errorMsg) {
                     e.preventDefault();
-                    return;
+                    var p = document.createElement('p');
+                    p.className = 'notice error client-error';
+                    p.textContent = errorMsg;
+                    payForm.insertBefore(p, payForm.firstChild);
+                    if (customerNameEl && !customerNameEl.value.trim()) {
+                        customerNameEl.focus();
+                    } else if (customerPhoneEl && customerPhoneEl.value.trim() && !/^\d{10,11}$/.test(customerPhoneEl.value.trim())) {
+                        customerPhoneEl.focus();
+                    } else if (givenEl) {
+                        givenEl.focus();
+                    }
                 }
-            }
-        });
-    })();
+            });
+        })();
 
     // Reload voucher list via AJAX and update the voucher select while preserving other form inputs
     function reloadVouchers() {

@@ -126,6 +126,8 @@ public class ThucDonController extends HttpServlet {
                     double gia = Double.parseDouble(req.getParameter("gia"));
                     String loai = req.getParameter("loai");
                     String donViTinh = req.getParameter("donViTinh");
+                    int soLuong = 0;
+                    try { soLuong = Integer.parseInt(req.getParameter("soLuong")); } catch (Exception ignored) {}
                     // Handle image upload
                     String imagePath = null;
                     Part imagePart = req.getPart("image");
@@ -140,7 +142,7 @@ public class ThucDonController extends HttpServlet {
                         imagePath = safeName;
                     }
 
-                    ThucDon td = new ThucDon(maItem, tenItem, gia, loai, donViTinh, imagePath);
+                    ThucDon td = new ThucDon(maItem, tenItem, gia, loai, donViTinh, soLuong, imagePath);
                     dao.insert(td);
                     resp.sendRedirect("thucdon?action=list");
                     break;
@@ -151,6 +153,8 @@ public class ThucDonController extends HttpServlet {
                     double gia = Double.parseDouble(req.getParameter("gia"));
                     String loai = req.getParameter("loai");
                     String donViTinh = req.getParameter("donViTinh");
+                    int soLuong = 0;
+                    try { soLuong = Integer.parseInt(req.getParameter("soLuong")); } catch (Exception ignored) {}
                     // Handle image upload: if no new file, keep existing imagePath
                     String imagePath = null;
                     Part imagePart = req.getPart("image");
@@ -169,7 +173,7 @@ public class ThucDonController extends HttpServlet {
                         if (existing != null) imagePath = existing.getImagePath();
                     }
 
-                    ThucDon td = new ThucDon(maItem, tenItem, gia, loai, donViTinh, imagePath);
+                    ThucDon td = new ThucDon(maItem, tenItem, gia, loai, donViTinh, soLuong, imagePath);
                     dao.update(td);
                     resp.sendRedirect("thucdon?action=list");
                     break;
