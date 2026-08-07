@@ -25,6 +25,7 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.Connection;
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 
 @WebServlet("/hoadon")
@@ -157,6 +158,69 @@ public class HoaDonController extends HttpServlet {
                     RequestDispatcher rd = req.getRequestDispatcher("index.jsp");
                     rd.forward(req, resp);
                     break;
+
+                case "thongke": {
+                    // Parse date filters (yyyy-MM-dd). Nếu không cung cấp, mặc định 30 ngày gần nhất
+                    String fromStr = req.getParameter("from");
+                    String toStr = req.getParameter("to");
+                    LocalDate toDate = toStr != null && !toStr.isEmpty() ? LocalDate.parse(toStr) : LocalDate.now();
+                    LocalDate fromDate = fromStr != null && !fromStr.isEmpty() ? LocalDate.parse(fromStr) : toDate.minusDays(29);
+
+                    LocalDateTime fromDT = fromDate.atStartOfDay();
+                    LocalDateTime toDT = toDate.atTime(23,59,59);
+
+                    // DEBUG: In ra dates
+                    //System.out.println("[THONGKE DEBUG] From: " + fromDT + ", To: " + toDT);
+
+                    try {
+                        // Tổng doanh thu
+                        double totalRevenue = hoaDonDao.getTotalRevenue(fromDT, toDT);
+                        System.out.println("[THONGKE DEBUG] totalRevenue = " + totalRevenue);
+
+                        // Doanh thu theo nhân viên
+                        java.util.List<com.example.Entity.ThongKeNhanVien> byEmployee = hoaDonDao.getRevenueByEmployee(fromDT, toDT);
+                        //System.out.println("[THONGKE DEBUG] byEmployee size = " + (byEmployee != null ? byEmployee.size() : "NULL"));
+                        //if (byEmployee != null) {
+                        //    for (com.example.Entity.ThongKeNhanVien e : byEmployee) {
+                        //        System.out.println("  - " + e.getMaND() + ": " + e.getTenND() + " = " + e.getTongDoanhThu());
+                        //    }
+                        //}
+
+                        // Doanh thu theo ngày (danh sách ngày trong khoảng)
+                        java.util.List<com.example.Entity.ThongKeNgay> byDate = hoaDonDao.getRevenueByDate(fromDT, toDT, "DAY");
+                        //System.out.println("[THONGKE DEBUG] byDate size = " + (byDate != null ? byDate.size() : "NULL"));
+                        //if (byDate != null) {
+                        //    for (com.example.Entity.ThongKeNgay d : byDate) {
+                        //        System.out.println("  - " + d.getNgay() + " = " + d.getTongDoanhThu());
+                        //    }
+                        //}
+
+                        // Top món bán chạy
+                        java.util.List<com.example.Entity.ThongKeMon> topItems = ctDao.getTopSellingItems(fromDT, toDT, 10);
+                        //System.out.println("[THONGKE DEBUG] topItems size = " + (topItems != null ? topItems.size() : "NULL"));
+                        //if (topItems != null) {
+                        //    for (com.example.Entity.ThongKeMon m : topItems) {
+                        //        System.out.println("  - " + m.getMaItem() + ": " + m.getTenItem() + " x" + m.getSoLuongBan() + " = " + m.getDoanhThu());
+                        //    }
+                        //}
+
+                        req.setAttribute("totalRevenue", totalRevenue);
+                        req.setAttribute("byEmployee", byEmployee);
+                        req.setAttribute("byDate", byDate);
+                        req.setAttribute("topItems", topItems);
+                        req.setAttribute("from", fromDate.toString());
+                        req.setAttribute("to", toDate.toString());
+
+                    } catch (Exception e) {
+                        //System.out.println("[THONGKE ERROR] Exception: " + e.getMessage());
+                        e.printStackTrace();
+                        req.setAttribute("errorMessage", "Lỗi khi tải dữ liệu thống kê: " + e.getMessage());
+                    }
+
+                    RequestDispatcher rdTk = req.getRequestDispatcher("thongke.jsp");
+                    rdTk.forward(req, resp);
+                    break;
+                }
 
                 case "delete":
                     String maHD = req.getParameter("maHD");

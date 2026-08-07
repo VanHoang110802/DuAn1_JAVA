@@ -26,15 +26,15 @@
 <main class="page-shell">
     <header class="topbar">
         <div class="brand-block">
-            <div class="brand-mark">L</div>
+            <div class="brand-mark">V</div>
             <div>
-                <p class="eyebrow">Quản lý</p>
-                <h1>Xin chào, <%= currentUser.getTenND() %></h1>
+                <p class="eyebrow">Admin</p>
+                <h1>Quản lý Voucher</h1>
             </div>
         </div>
         <nav class="nav-actions">
-            <a class="nav-link" href="index">Trang chính</a>
-            <a class="nav-link" href="logout">Đăng xuất</a>
+            <a class="nav-link" href="quanly.jsp">Admin</a>
+            <a class="nav-link" href="logout" onclick="return confirm('Bạn có chắc muốn đăng xuất?')">Đăng xuất</a>
         </nav>
     </header>
 

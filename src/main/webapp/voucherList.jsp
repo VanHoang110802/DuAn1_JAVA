@@ -62,7 +62,7 @@
         </div>
         <nav class="nav-actions">
             <a class="nav-link" href="index">Trang chính</a>
-            <a class="nav-link" href="logout">Đăng xuất</a>
+            <a class="nav-link" href="logout" onclick="return confirm('Bạn có chắc muốn đăng xuất?')">Đăng xuất</a>
         </nav>
     </header>
 

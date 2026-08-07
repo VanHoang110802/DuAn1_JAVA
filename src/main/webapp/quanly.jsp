@@ -26,7 +26,7 @@
 
     <nav class="nav-actions">
       <!-- Trang phục vụ đã ẩn cho role quản lý -->
-      <a class="nav-link" href="logout">Đăng xuất</a>
+      <a class="nav-link" href="logout" onclick="return confirm('Bạn có chắc muốn đăng xuất?')">Đăng xuất</a>
     </nav>
   </header>
 
@@ -50,6 +50,11 @@
       <span>V</span>
       <h3>Quản lý voucher</h3>
       <p class="muted">Tạo mã giảm giá, cập nhật hạn sử dụng và quản lý lượt dùng.</p>
+    </a>
+    <a class="manager-tile" href="hoadon?action=thongke">
+      <span>T</span>
+      <h3>Thống kê</h3>
+      <p class="muted">Báo cáo doanh thu, món bán chạy và báo cáo nhân viên.</p>
     </a>
   </section>
 </main>

@@ -32,6 +32,21 @@
 <head>
     <title>Trang nhân viên phục vụ</title>
     <link rel="stylesheet" href="assets/app.css">
+    <style>
+        /* Notification style placed near Chi tiết hóa đơn header */
+        #notificationContainer .notice {
+            background: #e6f6ea; /* light green */
+            color: #13633a;
+            padding: 10px 14px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            font-weight: 600;
+            margin: 0;
+            display: inline-block;
+        }
+        /* Ensure header doesn't hide absolute notification */
+        .panel-header { overflow: visible; }
+    </style>
 </head>
 <body>
 <main class="page-shell">
@@ -52,7 +67,7 @@
             <% if ("QuanLy".equals(currentUser.getVaiTro())) { %>
               <a class="nav-link" href="quanly">Quản lý</a>
             <% } %>
-            <a class="nav-link" href="logout">Đăng xuất</a>
+            <a class="nav-link" href="logout" onclick="return confirm('Bạn có chắc muốn đăng xuất?')">Đăng xuất</a>
         </nav>
     </header>
 
@@ -288,8 +303,12 @@
         </div>
 
         <div class="panel">
-            <div class="panel-header">
-                <h2>Chi tiết hóa đơn</h2>
+            <div class="panel-header" style="position:relative; display:flex; align-items:center; justify-content:space-between;">
+                <div class="header-left" style="display:flex; align-items:center; gap:16px;">
+                    <h2 style="margin:0;">Chi tiết hóa đơn</h2>
+                    <!-- Notification next to title -->
+                    <div id="notificationContainer" style="min-width:260px; max-width:480px; text-align:left; z-index:5;"></div>
+                </div>
                 <% if (currentHD != null) { %>
                 <span class="status done">HD <%= currentHD.getMaHD() %></span>
                 <% } %>
@@ -378,11 +397,11 @@
                     </div>
 
                     <div class="field-group full-width">
-                        <div class="inline-actions">
-                            <button type="button" class="secondary-button" onclick="reloadVouchers()">Tải lại</button>
-                            <button type="submit">Thanh toán</button>
-                        </div>
-                    </div>
+                         <div class="inline-actions">
+                             <button type="button" class="secondary-button" onclick="reloadVouchers()">Tải lại</button>
+                             <button type="submit">Thanh toán</button>
+                         </div>
+                     </div>
 
                     <div class="field-group full-width">
                         <div class="pay-summary">
@@ -784,13 +803,14 @@
     }
 
     function showTempMessage(msg, cls) {
-        var payForm = document.getElementById('payForm');
-        if (!payForm) return;
+        var container = document.getElementById('notificationContainer');
+        if (!container) return;
         var p = document.createElement('p');
         p.className = 'notice ' + (cls || 'success') + ' client-info';
         p.textContent = msg;
-        payForm.insertBefore(p, payForm.firstChild);
-        setTimeout(function () { if (p && p.parentNode) p.parentNode.removeChild(p); }, 3000);
+        container.innerHTML = '';
+        container.appendChild(p);
+        setTimeout(function () { if (container) container.innerHTML = ''; }, 3000);
     }
 
     // Tự động điền thông tin khách hàng khi nhân viên nhập số điện thoại.
@@ -802,7 +822,11 @@
         var timer = null;
 
         function showTempMessage(msg, cls) {
-            // reuse removeExistingMessage to avoid clutter
+            // Delegate to global showTempMessage (which renders into notificationContainer)
+            if (typeof window.showTempMessage === 'function') {
+                try { window.showTempMessage(msg, cls); return; } catch (e) { /* fallthrough */ }
+            }
+            // Fallback: insert near payForm
             removeExistingMessage();
             var p = document.createElement('p');
             p.className = 'notice ' + (cls || 'success') + ' client-info';
@@ -823,7 +847,7 @@
                         nameEl.value = data.tenKH || '';
                         showTempMessage('Đã nạp thông tin khách cũ: ' + (data.tenKH || ''), 'success');
                     } else {
-                        showTempMessage('Không tìm thấy khách hàng, vui lòng nhập thông tin mới nếu cần', 'info');
+                        showTempMessage('Không tìm thấy khách hàng, vui lòng nhập thông tin mới', 'info');
                     }
                 })
                 .catch(function (err) {

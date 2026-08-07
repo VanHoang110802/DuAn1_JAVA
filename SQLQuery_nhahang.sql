@@ -88,6 +88,26 @@ CREATE TABLE VoucherUsage (
     FOREIGN KEY (MaHoaDon) REFERENCES HoaDon(MaHD)
 );
 
+-- Thêm Foreign Key cho MaVoucher trong HoaDon
+ALTER TABLE HoaDon ADD FOREIGN KEY (MaVoucher) REFERENCES Voucher(MaVoucher);
+
+-- Index để tối ưu thống kê
+CREATE INDEX idx_HoaDon_NgayLap ON HoaDon(NgayLap);
+CREATE INDEX idx_ChiTietHoaDon_MaItem ON ChiTietHoaDon(MaItem);
+CREATE INDEX idx_HoaDon_MaKH ON HoaDon(MaKH);
+CREATE INDEX idx_VoucherUsage_MaVoucher ON VoucherUsage(MaVoucher);
+
+-- SQL Server: tạo index cho các cột FK / filter thường dùng (nếu chưa tồn tại)
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'idx_HoaDon_MaND' AND object_id = OBJECT_ID('dbo.HoaDon'))
+BEGIN
+    CREATE INDEX idx_HoaDon_MaND ON dbo.HoaDon(MaND);
+END
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'idx_HoaDon_MaBan' AND object_id = OBJECT_ID('dbo.HoaDon'))
+BEGIN
+    CREATE INDEX idx_HoaDon_MaBan ON dbo.HoaDon(MaBan);
+END
+
 -- Dữ liệu mẫu Người dùng
 INSERT INTO NguoiDung VALUES 
 ('ND01', N'Nguyễn Văn F', N'NhanVien', 'nv1', '123'),
@@ -138,6 +158,41 @@ INSERT INTO Voucher VALUES
 ('V004', N'Giảm 30k', N'TienMat', 30000, 250000, '2026-07-07', '2026-07-10', 40, 40, 1),
 ('V005', N'Giảm 20%', N'PhanTram', 20, 300000, '2026-05-05', '2026-06-06', 25, 25, 1);
 
--- Thêm Foreign Key cho MaVoucher trong HoaDon
-ALTER TABLE HoaDon ADD FOREIGN KEY (MaVoucher) REFERENCES Voucher(MaVoucher);
+-- Thêm 3 hóa đơn mẫu (kiểm tra cột MaItem 'TD01' và MaND 'ND01' tồn tại trong DB) 
+INSERT INTO HoaDon VALUES ('HD_TEST_1', '2026-08-06 10:00:00', 100000, N'Đã thanh toán', 'B001', 'ND01', NULL, NULL);
+INSERT INTO HoaDon VALUES ('HD_TEST_2', '2026-08-06 12:30:00', 150000, N'Đã thanh toán', 'B002', 'ND01', NULL, NULL);
+INSERT INTO HoaDon VALUES ('HD_TEST_3', '2026-08-06 18:45:00', 80000, N'Đã thanh toán', 'B001', 'ND02', NULL, NULL);
 
+INSERT INTO ChiTietHoaDon VALUES ('HD_TEST_1','TD01',2,50000);
+INSERT INTO ChiTietHoaDon VALUES ('HD_TEST_2','TD03',3,50000);
+INSERT INTO ChiTietHoaDon VALUES ('HD_TEST_3','TD01',1,80000);
+
+-- 1. Kiểm tra hóa đơn trong bảng
+SELECT MaHD, CONVERT(varchar(30), NgayLap, 121) AS NgayLapISO, TongTien, TrangThai
+FROM HoaDon
+ORDER BY NgayLap DESC;
+
+-- 2. Đếm hóa đơn trong khoảng ngày bạn lọc
+SELECT COUNT(*) AS cnt
+FROM HoaDon
+WHERE NgayLap >= '2026-07-07 00:00:00' AND NgayLap <= '2026-08-08 23:59:59';
+
+-- 3. Đếm hóa đơn "Đã thanh toán" trong khoảng
+SELECT COUNT(*) AS cnt
+FROM HoaDon
+WHERE NgayLap >= '2026-07-07 00:00:00' AND NgayLap <= '2026-08-08 23:59:59' AND TrangThai = N'Đã thanh toán';
+
+-- 4. Tính tổng doanh thu
+SELECT SUM(TongTien) AS total
+FROM HoaDon
+WHERE NgayLap >= '2026-07-07 00:00:00' AND NgayLap <= '2026-08-08 23:59:59' AND TrangThai = N'Đã thanh toán';
+
+-- Kiểm tra top items
+SELECT c.MaItem, t.TenItem, SUM(c.SoLuong) AS TotalQty, SUM(c.SoLuong * c.DonGia) AS TotalRevenue 
+FROM ChiTietHoaDon c 
+JOIN HoaDon h ON c.MaHD = h.MaHD 
+LEFT JOIN ThucDon t ON c.MaItem = t.MaItem 
+WHERE h.NgayLap >= '2026-07-07 00:00:00' AND h.NgayLap <= '2026-08-08 23:59:59' AND h.TrangThai = N'Đã thanh toán' 
+GROUP BY c.MaItem, t.TenItem 
+ORDER BY TotalQty DESC 
+OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;

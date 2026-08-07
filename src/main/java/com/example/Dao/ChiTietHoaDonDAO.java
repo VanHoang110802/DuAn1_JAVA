@@ -5,6 +5,9 @@ import com.example.Entity.ChiTietHoaDon;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.time.LocalDateTime;
+import java.util.LinkedList;
+import com.example.Entity.ThongKeMon;
 
 public class ChiTietHoaDonDAO {
     private Connection conn;
@@ -143,5 +146,40 @@ public class ChiTietHoaDonDAO {
             }
         }
         return tong;
+    }
+
+    // Top selling items (bán nhiều nhất) trong khoảng thời gian (theo số lượng), giới hạn số dòng trả về
+    public List<ThongKeMon> getTopSellingItems(LocalDateTime from, LocalDateTime to, int limit) throws SQLException {
+        List<ThongKeMon> list = new LinkedList<>();
+        String sql = "SELECT c.MaItem, t.TenItem, SUM(c.SoLuong) AS TotalQty, SUM(c.SoLuong * c.DonGia) AS TotalRevenue " +
+                "FROM ChiTietHoaDon c JOIN HoaDon h ON c.MaHD = h.MaHD LEFT JOIN ThucDon t ON c.MaItem = t.MaItem " +
+                "WHERE h.NgayLap >= ? AND h.NgayLap <= ? AND h.TrangThai = ? " +
+                "GROUP BY c.MaItem, t.TenItem ORDER BY TotalQty DESC OFFSET 0 ROWS FETCH NEXT ? ROWS ONLY";
+        //System.out.println("[DAO DEBUG] getTopSellingItems SQL: " + sql);
+        //System.out.println("[DAO DEBUG] from=" + from + ", to=" + to + ", limit=" + limit);
+        try {
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setTimestamp(1, Timestamp.valueOf(from));
+                ps.setTimestamp(2, Timestamp.valueOf(to));
+                ps.setString(3, "Đã thanh toán");
+                ps.setInt(4, limit);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        String maItem = rs.getString("MaItem");
+                        String tenItem = rs.getString("TenItem");
+                        int qty = rs.getInt("TotalQty");
+                        double revenue = rs.getDouble("TotalRevenue");
+                        //System.out.println("[DAO DEBUG]   row: " + maItem + ", " + tenItem + ", qty=" + qty + ", revenue=" + revenue);
+                        list.add(new ThongKeMon(maItem, tenItem, qty, revenue));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            //System.out.println("[DAO ERROR] getTopSellingItems exception: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
+        //System.out.println("[DAO DEBUG] getTopSellingItems returned " + list.size() + " rows");
+        return list;
     }
 }

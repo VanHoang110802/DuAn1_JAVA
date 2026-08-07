@@ -4,6 +4,9 @@ import com.example.Entity.HoaDon;
 
 import java.sql.*;
 import java.time.LocalDateTime;
+import java.util.LinkedList;
+import com.example.Entity.ThongKeNhanVien;
+import com.example.Entity.ThongKeNgay;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,6 +15,102 @@ public class HoaDonDAO {
 
     public HoaDonDAO(Connection conn) {
         this.conn = conn;
+    }
+
+    // Tổng doanh thu trong khoảng thời gian (chỉ tính hóa đơn đã thanh toán)
+    public double getTotalRevenue(LocalDateTime from, LocalDateTime to) throws SQLException {
+        String sql = "SELECT SUM(TongTien) AS total FROM HoaDon WHERE NgayLap >= ? AND NgayLap <= ? AND TrangThai = ?";
+        //System.out.println("[DAO DEBUG] getTotalRevenue SQL: " + sql);
+        //System.out.println("[DAO DEBUG] from=" + from + ", to=" + to);
+        //System.out.println("[DAO DEBUG] conn = " + conn);
+        try {
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setTimestamp(1, Timestamp.valueOf(from));
+                ps.setTimestamp(2, Timestamp.valueOf(to));
+                ps.setString(3, "Đã thanh toán");
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        double result = rs.getDouble("total");
+                        //System.out.println("[DAO DEBUG] getTotalRevenue result = " + result);
+                        return result;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            //System.out.println("[DAO ERROR] getTotalRevenue exception: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
+        //System.out.println("[DAO DEBUG] getTotalRevenue returned 0.0 (no result)");
+        return 0.0;
+    }
+
+    // Doanh thu theo nhân viên trong khoảng thời gian
+    public List<ThongKeNhanVien> getRevenueByEmployee(LocalDateTime from, LocalDateTime to) throws SQLException {
+        List<ThongKeNhanVien> list = new LinkedList<>();
+        String sql = "SELECT h.MaND, n.TenND, SUM(h.TongTien) AS Total " +
+                "FROM HoaDon h LEFT JOIN NguoiDung n ON h.MaND = n.MaND " +
+                "WHERE h.NgayLap >= ? AND h.NgayLap <= ? AND h.TrangThai = ? " +
+                "GROUP BY h.MaND, n.TenND ORDER BY Total DESC";
+        //System.out.println("[DAO DEBUG] getRevenueByEmployee SQL: " + sql);
+        //System.out.println("[DAO DEBUG] from=" + from + ", to=" + to);
+        try {
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setTimestamp(1, Timestamp.valueOf(from));
+                ps.setTimestamp(2, Timestamp.valueOf(to));
+                ps.setString(3, "Đã thanh toán");
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        String maND = rs.getString("MaND");
+                        String tenND = rs.getString("TenND");
+                        double total = rs.getDouble("Total");
+                        //System.out.println("[DAO DEBUG]   row: " + maND + ", " + tenND + ", " + total);
+                        list.add(new ThongKeNhanVien(maND, tenND, total));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            //System.out.println("[DAO ERROR] getRevenueByEmployee exception: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
+        //System.out.println("[DAO DEBUG] getRevenueByEmployee returned " + list.size() + " rows");
+        return list;
+    }
+
+    // Doanh thu theo ngày hoặc tháng (period = "DAY" or "MONTH")
+    public List<ThongKeNgay> getRevenueByDate(LocalDateTime from, LocalDateTime to, String period) throws SQLException {
+        List<ThongKeNgay> list = new LinkedList<>();
+        String dateExpr = "CONVERT(varchar(10), NgayLap, 23)"; // yyyy-mm-dd
+        if ("MONTH".equalsIgnoreCase(period)) {
+            dateExpr = "CONVERT(varchar(7), NgayLap, 120)"; // yyyy-mm
+        }
+        String sql = "SELECT " + dateExpr + " AS Period, SUM(TongTien) AS Total " +
+                "FROM HoaDon WHERE NgayLap >= ? AND NgayLap <= ? AND TrangThai = ? " +
+                "GROUP BY " + dateExpr + " ORDER BY " + dateExpr;
+        //System.out.println("[DAO DEBUG] getRevenueByDate SQL: " + sql);
+        //System.out.println("[DAO DEBUG] from=" + from + ", to=" + to + ", period=" + period);
+        try {
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setTimestamp(1, Timestamp.valueOf(from));
+                ps.setTimestamp(2, Timestamp.valueOf(to));
+                ps.setString(3, "Đã thanh toán");
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        String ngay = rs.getString("Period");
+                        double total = rs.getDouble("Total");
+                        //System.out.println("[DAO DEBUG]   row: " + ngay + ", " + total);
+                        list.add(new ThongKeNgay(ngay, total));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            //System.out.println("[DAO ERROR] getRevenueByDate exception: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
+        //System.out.println("[DAO DEBUG] getRevenueByDate returned " + list.size() + " rows");
+        return list;
     }
 
     // Lấy tất cả hóa đơn (sắp xếp theo NgayLap DESC - mới nhất trước)
